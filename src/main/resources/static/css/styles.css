@@ -1,0 +1,152 @@
+:root {
+    --bg: #f4efe6;
+    --bg-2: #fffaf1;
+    --ink: #1b1b1b;
+    --muted: #53504a;
+    --brand: #c4441c;
+    --brand-dark: #8e2f14;
+    --line: #d7c8b2;
+    --ok: #1f7a45;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Space Grotesk", sans-serif;
+    color: var(--ink);
+    background:
+        radial-gradient(circle at 20% 20%, #ffe6c7 0%, transparent 35%),
+        radial-gradient(circle at 80% 0%, #ffd3b8 0%, transparent 30%),
+        linear-gradient(180deg, var(--bg), var(--bg-2));
+    min-height: 100vh;
+}
+
+.page {
+    width: min(1100px, 94%);
+    margin: 2rem auto;
+}
+
+.hero {
+    background: rgba(255, 255, 255, 0.75);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 1.25rem;
+    backdrop-filter: blur(4px);
+}
+
+.hero h1 {
+    margin: 0 0 0.25rem;
+    font-size: clamp(1.6rem, 2.3vw, 2.4rem);
+}
+
+.hero p {
+    margin: 0.1rem 0 1rem;
+    color: var(--muted);
+}
+
+.grid {
+    margin-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 0.9rem;
+}
+
+.card,
+.response-card {
+    background: rgba(255, 255, 255, 0.78);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 1rem;
+}
+
+.card h2,
+.response-card h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+}
+
+form {
+    display: grid;
+    gap: 0.55rem;
+}
+
+input,
+textarea,
+select,
+button {
+    font: inherit;
+}
+
+input,
+textarea,
+select {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 0.58rem 0.65rem;
+    background: #fff;
+}
+
+textarea {
+    min-height: 74px;
+    resize: vertical;
+}
+
+.token-box textarea {
+    width: 100%;
+    min-height: 84px;
+}
+
+button {
+    border: 0;
+    border-radius: 10px;
+    padding: 0.6rem 0.8rem;
+    background: var(--brand);
+    color: #fff;
+    font-weight: 700;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.15s ease;
+}
+
+button:hover {
+    transform: translateY(-1px);
+    background: var(--brand-dark);
+}
+
+button.ghost {
+    background: #fff;
+    color: var(--brand-dark);
+    border: 1px solid var(--line);
+}
+
+.button-row {
+    display: flex;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+
+pre {
+    margin: 0;
+    border-radius: 10px;
+    border: 1px solid var(--line);
+    background: #fff;
+    padding: 0.8rem;
+    min-height: 180px;
+    max-height: 360px;
+    overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.ok {
+    color: var(--ok);
+}
+
+@media (max-width: 700px) {
+    .page {
+        width: 95%;
+        margin: 1rem auto;
+    }
+}
