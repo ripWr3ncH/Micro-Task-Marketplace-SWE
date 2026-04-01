@@ -142,7 +142,11 @@ class ApplicationServiceImplTest {
         var response = applicationService.acceptApplication(50L, "buyer@test.com", false);
 
         assertThat(response.getId()).isEqualTo(200L);
+        assertThat(selected.getStatus()).isEqualTo(ApplicationStatus.ACCEPTED);
+        assertThat(other.getStatus()).isEqualTo(ApplicationStatus.REJECTED);
+        assertThat(task.getStatus()).isEqualTo(TaskStatus.IN_PROGRESS);
         verify(applicationRepository).saveAll(any());
+        verify(taskRepository).save(task);
     }
 
     @Test
