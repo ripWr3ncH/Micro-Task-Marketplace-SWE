@@ -2,13 +2,22 @@ name: CI
 
 on:
   push:
-    branches: ["main", "master", "develop"]
+    branches: ["main", "develop"]
   pull_request:
-    branches: ["main", "master", "develop"]
+    branches: ["main", "develop"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
 
     steps:
       - name: Checkout
@@ -25,7 +34,7 @@ jobs:
         run: chmod +x mvnw
 
       - name: Build and Test
-        run: ./mvnw -B clean verify
+        run: ./mvnw -B -ntp clean verify
 
       - name: Build Docker image
         run: docker build -t microtask-marketplace:ci .
