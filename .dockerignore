@@ -1,0 +1,10 @@
+target/
+.git/
+.idea/
+*.iml
+
+**/.DS_Store
+**/Thumbs.db
+
+README.md
+HELP.md
