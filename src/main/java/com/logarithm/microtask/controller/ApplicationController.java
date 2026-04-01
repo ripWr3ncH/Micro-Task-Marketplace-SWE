@@ -5,6 +5,7 @@ import com.logarithm.microtask.dto.application.ApplicationResponse;
 import com.logarithm.microtask.dto.taskassignment.TaskAssignmentResponse;
 import com.logarithm.microtask.service.ApplicationService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,12 +16,14 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.validation.annotation.Validated;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/applications")
 @RequiredArgsConstructor
+@Validated
 public class ApplicationController {
 
     private final ApplicationService applicationService;
@@ -33,12 +36,13 @@ public class ApplicationController {
     }
 
     @GetMapping("/task/{taskId}")
-    public ResponseEntity<List<ApplicationResponse>> getApplicationsByTask(@PathVariable Long taskId) {
+    public ResponseEntity<List<ApplicationResponse>> getApplicationsByTask(@PathVariable @Positive(message = "Task ID must be greater than 0") Long taskId) {
         return ResponseEntity.ok(applicationService.getApplicationsByTask(taskId));
     }
 
     @PostMapping("/{applicationId}/accept")
-    public ResponseEntity<TaskAssignmentResponse> acceptApplication(@PathVariable Long applicationId,
+    public ResponseEntity<TaskAssignmentResponse> acceptApplication(
+            @PathVariable @Positive(message = "Application ID must be greater than 0") Long applicationId,
                                                                     Authentication authentication) {
         boolean isAdmin = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));

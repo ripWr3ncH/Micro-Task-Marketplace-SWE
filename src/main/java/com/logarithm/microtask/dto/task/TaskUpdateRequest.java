@@ -18,13 +18,13 @@ import java.math.BigDecimal;
 @Builder
 public class TaskUpdateRequest {
 
-    @Size(max = 150)
+    @Size(max = 150, message = "Title must be at most 150 characters")
     private String title;
 
-    @Size(max = 2000)
+    @Size(max = 2000, message = "Description must be at most 2000 characters")
     private String description;
 
-    @DecimalMin(value = "0.01")
+    @DecimalMin(value = "0.01", message = "Budget must be at least 0.01")
     private BigDecimal budget;
 
     private TaskStatus status;
