@@ -19,17 +19,17 @@ import java.util.Set;
 @Builder
 public class RegisterRequest {
 
-    @NotBlank
-    @Size(max = 100)
+    @NotBlank(message = "Full name is required")
+    @Size(max = 100, message = "Full name must be at most 100 characters")
     private String fullName;
 
-    @NotBlank
-    @Email
-    @Size(max = 120)
+    @NotBlank(message = "Email is required")
+    @Email(message = "Email must be valid")
+    @Size(max = 120, message = "Email must be at most 120 characters")
     private String email;
 
-    @NotBlank
-    @Size(min = 8, max = 120)
+    @NotBlank(message = "Password is required")
+    @Size(min = 8, max = 120, message = "Password must be between 8 and 120 characters")
     private String password;
 
     private Set<RoleName> roles;

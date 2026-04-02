@@ -44,6 +44,7 @@
                   "if (pm.response.code === 201) {",
                   "  const json = pm.response.json();",
                   "  pm.environment.set('buyerToken', json.token);",
+                  "  pm.environment.set('activeToken', json.token);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -86,6 +87,7 @@
                   "if (pm.response.code === 201) {",
                   "  const json = pm.response.json();",
                   "  pm.environment.set('sellerToken', json.token);",
+                  "  pm.environment.set('activeToken', json.token);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -128,6 +130,7 @@
                   "if (pm.response.code === 200) {",
                   "  const json = pm.response.json();",
                   "  pm.environment.set('buyerToken', json.token);",
+                  "  pm.environment.set('activeToken', json.token);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -170,6 +173,7 @@
                   "if (pm.response.code === 200) {",
                   "  const json = pm.response.json();",
                   "  pm.environment.set('sellerToken', json.token);",
+                  "  pm.environment.set('activeToken', json.token);",
                   "}"
                 ],
                 "type": "text/javascript"
@@ -420,6 +424,10 @@
     },
     {
       "key": "sellerToken",
+      "value": ""
+    },
+    {
+      "key": "activeToken",
       "value": ""
     },
     {

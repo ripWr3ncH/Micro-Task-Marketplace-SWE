@@ -11,6 +11,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.UUID;
+
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,14 +36,16 @@ class MarketplaceIntegrationTest {
 
     @Test
     void shouldRegisterAndLoginBuyer() throws Exception {
+        String buyerEmail = uniqueEmail("buyer-login");
+
         String registerBody = """
                 {
                   "fullName":"Buyer One",
-                  "email":"buyer1@test.com",
+                  "email":"%s",
                   "password":"password123",
                   "roles":["BUYER"]
                 }
-                """;
+                """.formatted(buyerEmail);
 
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -50,10 +54,10 @@ class MarketplaceIntegrationTest {
 
         String loginBody = """
                 {
-                  "email":"buyer1@test.com",
+                  "email":"%s",
                   "password":"password123"
                 }
-                """;
+                """.formatted(buyerEmail);
 
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -63,8 +67,8 @@ class MarketplaceIntegrationTest {
 
     @Test
     void shouldCreateTaskApplyAndAccept() throws Exception {
-        String buyerToken = registerAndGetToken("buyer2@test.com", RoleName.BUYER);
-        String sellerToken = registerAndGetToken("seller2@test.com", RoleName.SELLER);
+        String buyerToken = registerAndGetToken("buyer-flow", RoleName.BUYER);
+        String sellerToken = registerAndGetToken("seller-flow", RoleName.SELLER);
 
         String taskBody = """
                 {
@@ -109,7 +113,53 @@ class MarketplaceIntegrationTest {
                 .andExpect(status().isOk());
     }
 
-    private String registerAndGetToken(String email, RoleName roleName) throws Exception {
+    @Test
+    void shouldRejectDuplicateApplicationFromSameSeller() throws Exception {
+        String buyerToken = registerAndGetToken("buyer-duplicate", RoleName.BUYER);
+        String sellerToken = registerAndGetToken("seller-duplicate", RoleName.SELLER);
+
+        String taskBody = """
+                {
+                  "title":"Backend API docs",
+                  "description":"Need full API documentation",
+                  "budget":75.00
+                }
+                """;
+
+        String taskResponse = mockMvc.perform(post("/api/v1/tasks")
+                        .header("Authorization", "Bearer " + buyerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(taskBody))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long taskId = objectMapper.readTree(taskResponse).get("id").asLong();
+
+        String applyBody = """
+                {
+                  "taskId":%d,
+                  "proposedAmount":70.00,
+                  "coverLetter":"I will deliver quickly"
+                }
+                """.formatted(taskId);
+
+        mockMvc.perform(post("/api/v1/applications")
+                        .header("Authorization", "Bearer " + sellerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(applyBody))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/v1/applications")
+                        .header("Authorization", "Bearer " + sellerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(applyBody))
+                .andExpect(status().isBadRequest());
+    }
+
+    private String registerAndGetToken(String emailPrefix, RoleName roleName) throws Exception {
+        String email = uniqueEmail(emailPrefix);
         String registerBody = """
                 {
                   "fullName":"%s",
@@ -117,7 +167,7 @@ class MarketplaceIntegrationTest {
                   "password":"password123",
                   "roles":["%s"]
                 }
-                """.formatted(email.split("@")[0], email, roleName.name());
+                """.formatted(emailPrefix, email, roleName.name());
 
         String registerResponse = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -129,5 +179,10 @@ class MarketplaceIntegrationTest {
 
         JsonNode node = objectMapper.readTree(registerResponse);
         return node.get("token").asText();
+    }
+
+    private String uniqueEmail(String prefix) {
+        String suffix = UUID.randomUUID().toString().substring(0, 8);
+        return prefix + "-" + suffix + "@test.com";
     }
 }

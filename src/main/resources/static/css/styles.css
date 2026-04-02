@@ -47,6 +47,43 @@ body {
     color: var(--muted);
 }
 
+.session-box {
+    background: rgba(255, 255, 255, 0.82);
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    padding: 0.7rem;
+    margin: 0 0 0.85rem;
+}
+
+.session-title {
+    margin: 0 0 0.5rem;
+    font-weight: 700;
+    color: var(--muted);
+}
+
+.session-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+    margin-bottom: 0.55rem;
+}
+
+.badge {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    padding: 0.2rem 0.6rem;
+    font-size: 0.82rem;
+    background: #fff;
+}
+
+.badge.ready {
+    color: var(--ok);
+    border-color: #96cfaf;
+    background: #eef9f1;
+}
+
 .grid {
     margin-top: 1rem;
     display: grid;

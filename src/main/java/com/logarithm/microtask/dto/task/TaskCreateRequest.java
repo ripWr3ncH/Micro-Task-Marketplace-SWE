@@ -19,15 +19,15 @@ import java.math.BigDecimal;
 @Builder
 public class TaskCreateRequest {
 
-    @NotBlank
-    @Size(max = 150)
+    @NotBlank(message = "Title is required")
+    @Size(max = 150, message = "Title must be at most 150 characters")
     private String title;
 
-    @NotBlank
-    @Size(max = 2000)
+    @NotBlank(message = "Description is required")
+    @Size(max = 2000, message = "Description must be at most 2000 characters")
     private String description;
 
-    @NotNull
-    @DecimalMin(value = "0.01")
+    @NotNull(message = "Budget is required")
+    @DecimalMin(value = "0.01", message = "Budget must be at least 0.01")
     private BigDecimal budget;
 }

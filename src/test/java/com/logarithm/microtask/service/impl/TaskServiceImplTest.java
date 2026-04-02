@@ -115,6 +115,17 @@ class TaskServiceImplTest {
     }
 
     @Test
+    void updateTaskShouldAllowAdminForNonOwner() {
+        when(taskRepository.findById(10L)).thenReturn(Optional.of(task));
+        when(taskRepository.save(any(Task.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        TaskUpdateRequest request = TaskUpdateRequest.builder().title("Admin Updated").build();
+        var response = taskService.updateTask(10L, request, "admin@test.com", true);
+
+        assertThat(response.getTitle()).isEqualTo("Admin Updated");
+    }
+
+    @Test
     void deleteTaskShouldAllowAdmin() {
         when(taskRepository.findById(10L)).thenReturn(Optional.of(task));
 
