@@ -1,18 +1,31 @@
+databases:
+  - name: microtask-marketplace-db
+    plan: free
+    databaseName: microtask
+    user: microtask
+
 services:
   - type: web
     name: microtask-marketplace
     env: docker
     plan: free
     autoDeploy: true
+    branch: main
     envVars:
       - key: SPRING_DATASOURCE_URL
-        value: jdbc:postgresql://<YOUR_RENDER_DB_HOST>:5432/<YOUR_RENDER_DB_NAME>
+        fromDatabase:
+          name: microtask-marketplace-db
+          property: connectionString
       - key: SPRING_DATASOURCE_USERNAME
-        value: <YOUR_RENDER_DB_USER>
+        fromDatabase:
+          name: microtask-marketplace-db
+          property: user
       - key: SPRING_DATASOURCE_PASSWORD
-        value: <YOUR_RENDER_DB_PASSWORD>
+        fromDatabase:
+          name: microtask-marketplace-db
+          property: password
       - key: APP_SECURITY_JWT_SECRET
-        value: <BASE64_256_BIT_SECRET>
+        sync: false
       - key: APP_SECURITY_JWT_EXPIRATION_MS
         value: "86400000"
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
