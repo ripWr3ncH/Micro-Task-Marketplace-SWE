@@ -40,7 +40,8 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/*.html", "/css/**", "/js/**", "/favicon.ico", "/error").permitAll()
-                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/v1/tasks/**").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")

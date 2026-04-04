@@ -15,6 +15,7 @@ import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @SpringBootTest
@@ -33,6 +34,22 @@ class MarketplaceIntegrationTest {
         mockMvc.perform(get("/api/v1/tasks"))
                 .andExpect(status().isUnauthorized());
     }
+
+        @Test
+        void shouldRejectUnauthenticatedLogoutRequest() throws Exception {
+                mockMvc.perform(post("/api/v1/auth/logout"))
+                                .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        void shouldLogoutAuthenticatedUser() throws Exception {
+                String buyerToken = registerAndGetToken("buyer-logout", RoleName.BUYER);
+
+                mockMvc.perform(post("/api/v1/auth/logout")
+                                                .header("Authorization", "Bearer " + buyerToken))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message").value("Logged out successfully."));
+        }
 
     @Test
     void shouldRejectBuyerApplyingToTask() throws Exception {
