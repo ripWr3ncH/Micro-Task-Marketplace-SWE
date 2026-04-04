@@ -32,3 +32,6 @@ build/
 ### VS Code ###
 .vscode/
 stitch_login_registration
+
+# Local environment secrets
+.env
