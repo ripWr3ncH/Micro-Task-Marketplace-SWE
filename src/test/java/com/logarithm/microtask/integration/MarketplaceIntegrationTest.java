@@ -31,6 +31,44 @@ class MarketplaceIntegrationTest {
     @Test
     void shouldRejectUnauthenticatedTaskListRequest() throws Exception {
         mockMvc.perform(get("/api/v1/tasks"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldRejectBuyerApplyingToTask() throws Exception {
+        String buyerToken = registerAndGetToken("buyer-apply-block", RoleName.BUYER);
+
+        String taskBody = """
+                {
+                  "title":"API Review",
+                  "description":"Need endpoint review",
+                  "budget":60.00
+                }
+                """;
+
+        String taskResponse = mockMvc.perform(post("/api/v1/tasks")
+                        .header("Authorization", "Bearer " + buyerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(taskBody))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long taskId = objectMapper.readTree(taskResponse).get("id").asLong();
+
+        String applyBody = """
+                {
+                  "taskId":%d,
+                  "proposedAmount":55.00,
+                  "coverLetter":"Buyer should not apply"
+                }
+                """.formatted(taskId);
+
+        mockMvc.perform(post("/api/v1/applications")
+                        .header("Authorization", "Bearer " + buyerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(applyBody))
                 .andExpect(status().isForbidden());
     }
 

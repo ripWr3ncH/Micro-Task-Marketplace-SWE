@@ -3,6 +3,7 @@ package com.logarithm.microtask.exception;
 import com.logarithm.microtask.dto.common.ApiErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -58,6 +59,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiErrorResponse> handleAuthentication(AuthenticationException ex,
                                                                  HttpServletRequest request) {
         return build(HttpStatus.UNAUTHORIZED, "Invalid credentials.", request.getRequestURI(), List.of());
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ApiErrorResponse> handleDataIntegrity(DataIntegrityViolationException ex,
+                                                                HttpServletRequest request) {
+        return build(HttpStatus.CONFLICT, "Data integrity violation.", request.getRequestURI(), List.of());
     }
 
     @ExceptionHandler(Exception.class)

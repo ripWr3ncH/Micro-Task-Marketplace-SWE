@@ -2,10 +2,12 @@ package com.logarithm.microtask.service.impl;
 
 import com.logarithm.microtask.dto.application.ApplicationCreateRequest;
 import com.logarithm.microtask.entity.Application;
+import com.logarithm.microtask.entity.Role;
 import com.logarithm.microtask.entity.Task;
 import com.logarithm.microtask.entity.TaskAssignment;
 import com.logarithm.microtask.entity.User;
 import com.logarithm.microtask.entity.enums.ApplicationStatus;
+import com.logarithm.microtask.entity.enums.RoleName;
 import com.logarithm.microtask.entity.enums.TaskStatus;
 import com.logarithm.microtask.exception.BadRequestException;
 import com.logarithm.microtask.exception.ForbiddenOperationException;
@@ -23,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -54,9 +57,19 @@ class ApplicationServiceImplTest {
 
     @BeforeEach
     void setUp() {
-        buyer = User.builder().email("buyer@test.com").fullName("Buyer").password("x").build();
+        buyer = User.builder()
+            .email("buyer@test.com")
+            .fullName("Buyer")
+            .password("x")
+            .roles(Set.of(Role.builder().name(RoleName.BUYER).build()))
+            .build();
         buyer.setId(1L);
-        seller = User.builder().email("seller@test.com").fullName("Seller").password("x").build();
+        seller = User.builder()
+            .email("seller@test.com")
+            .fullName("Seller")
+            .password("x")
+            .roles(Set.of(Role.builder().name(RoleName.SELLER).build()))
+            .build();
         seller.setId(2L);
 
         task = Task.builder()
