@@ -1,372 +1,133 @@
-# Micro Task Marketplace - Simple Project Explanation
+# Micro Task Marketplace - Team Contribution Explanation
 
-## 1. Project Overview (Simple)
+## Project Completion Summary
 
-Micro Task Marketplace is a small freelancing platform.
+This document explains which parts were completed by each team member based on the agreed ownership and execution prompts.
 
-- A BUYER posts a task with budget and details.
-- A SELLER sees open tasks and applies.
-- The BUYER chooses one application.
-- When accepted, that task is assigned and moves to IN_PROGRESS.
+- Team member 1: Zisan (Backend Core Owner)
+- Team member 2: Nafiz (UI, Testing, and Integration Owner)
 
-ADMIN can monitor and manage more actions across the system.
+## Completed by Zisan
 
-This project has:
+### 1. Backend Domain and Persistence
 
-- Backend API (Spring Boot)
-- Database (PostgreSQL)
-- Frontend pages (HTML/CSS/JS)
-- Automated testing
-- Docker setup
-- CI/CD pipeline
-- Render deployment setup
+Zisan completed core backend domain consistency and data-layer work in these areas:
 
-## 2. How the System Works (Step by Step)
+- `src/main/java/com/logarithm/microtask/entity/**`
+- `src/main/java/com/logarithm/microtask/repository/**`
 
-### Step 1: User creates account
+Key outcomes:
 
-- User goes to signup page.
-- User enters name, email, password, role.
-- Backend saves user with encrypted password.
-- Backend returns JWT token.
+- Entity relationships and status models finalized
+- Repository query behavior aligned with business rules
+- Domain consistency maintained for task, application, and assignment flows
 
-### Step 2: User logs in
+### 2. Service-Layer Business Logic
 
-- User logs in with email and password.
-- Backend verifies credentials.
-- Backend returns JWT token and roles.
-- Frontend stores token in browser localStorage.
+Zisan handled backend service correctness and rule enforcement in:
 
-### Step 3: Frontend sends secured API requests
+- `src/main/java/com/logarithm/microtask/service/**`
 
-- Frontend includes token in Authorization header:
-  - Bearer <token>
-- JWT filter validates token.
-- If token is valid, request goes to API logic.
-- If token is missing/invalid, request fails.
+Key outcomes:
 
-### Step 4: Buyer creates a task
+- Ownership checks implemented and verified
+- Task/application status transitions validated
+- Duplicate application and invalid state edge cases controlled
 
-- Buyer opens Create Task page.
-- Sends title, description, budget.
-- Backend creates task with status OPEN.
+### 3. Security and Exception Handling
 
-### Step 5: Seller applies to task
+Zisan completed authentication/authorization safety and exception standards in:
 
-- Seller opens task board and chooses a task.
-- Sends taskId, proposedAmount, coverLetter.
-- Backend saves application as PENDING.
-- Same seller cannot apply twice to same task.
+- `src/main/java/com/logarithm/microtask/security/**`
+- `src/main/java/com/logarithm/microtask/exception/**`
+- `src/main/java/com/logarithm/microtask/config/**`
 
-### Step 6: Buyer/Admin accepts application
+Key outcomes:
 
-- Buyer loads applications by task id.
-- Clicks accept on one application.
-- Backend does these actions:
-  - Selected application = ACCEPTED
-  - Other applications for same task = REJECTED
-  - Task status = IN_PROGRESS
-  - TaskAssignment record is created
+- JWT validation and secure request filtering finalized
+- Role-based access boundaries enforced
+- Forbidden, bad request, and not found behaviors normalized through global exception handling
 
-## 3. Role-Based Access (ADMIN, BUYER, SELLER)
+### 4. Release and Runtime Configuration
 
-### ADMIN
+Zisan finalized production-safe backend/runtime config:
 
-- Can do buyer-level task management actions.
-- Can review applications.
-- Can accept applications even if not owner in normal business flow.
-- Can access broader dashboard views.
+- `src/main/resources/application.properties`
+- `docker-compose.yml`
+- `render.yaml`
 
-### BUYER
+Key outcomes:
 
-- Can create/update/delete tasks.
-- Can view tasks.
-- Can review applications for tasks.
-- Can accept applications for own tasks.
+- Environment variable contract prepared for local and cloud runtime
+- Docker startup behavior validated
+- Render deployment config finalized for database + app integration
 
-### SELLER
+## Completed by Nafiz
 
-- Can view tasks.
-- Can apply to tasks.
-- Can view application listing endpoints.
-- Cannot create/update/delete buyer tasks.
+### 1. API Controller and DTO Contract Integration
 
-## 4. Backend Architecture (Controller -> Service -> Repository)
+Nafiz completed API contract alignment and integration-facing layers in:
 
-The backend uses a layered architecture.
+- `src/main/java/com/logarithm/microtask/controller/**`
+- `src/main/java/com/logarithm/microtask/dto/**`
 
-### Controller layer
+Key outcomes:
 
-- Receives HTTP requests.
-- Validates request body/path with annotations.
-- Extracts authentication details.
-- Calls service methods.
-- Returns HTTP response with status code.
+- Controller request/response behavior aligned with service contract
+- DTO validation and response consistency finalized
+- Endpoint-level integration behavior stabilized for frontend and Postman usage
 
-Example controllers:
+### 2. Frontend UI and User Flow
 
-- AuthController
-- TaskController
-- ApplicationController
+Nafiz completed static UI and interaction flow in:
 
-### Service layer
+- `src/main/resources/static/**`
 
-- Contains main business rules.
-- Checks ownership and permissions.
-- Handles status transitions.
-- Converts entities to response DTOs.
+Key outcomes:
 
-Example services:
+- UI pages integrated with authenticated API flow
+- Token persistence and API error display improved
+- Register -> login -> task create -> apply -> accept path usable from UI
 
-- AuthServiceImpl
-- TaskServiceImpl
-- ApplicationServiceImpl
+### 3. Testing and Quality Assurance
 
-### Repository layer
+Nafiz completed testing stabilization and integration validation in:
 
-- Talks directly to the database using Spring Data JPA.
-- Provides CRUD and custom finder methods.
+- `src/test/**`
+- `src/test/resources/application-test.properties`
 
-Example repositories:
+Key outcomes:
 
-- UserRepository
-- TaskRepository
-- ApplicationRepository
-- TaskAssignmentRepository
-- RoleRepository
+- Unit tests and integration tests aligned with final behavior
+- Happy path and major failure-path scenarios verified
+- Test reliability improved for CI and release readiness
 
-## 5. Database Design (Simple Relationship Explanation)
+### 4. CI, Postman, and Documentation Support
 
-Main tables/entities:
+Nafiz completed collaboration and validation tooling in:
 
-- users
-- roles
-- user_roles (join table)
-- tasks
-- applications
-- task_assignments
+- `.github/workflows/ci.yml`
+- `postman/**`
+- `TEAM_PUSH_AND_RELEASE_GUIDE.md`
 
-How they connect:
+Key outcomes:
 
-- One user can have multiple roles.
-- One buyer can create many tasks.
-- One task can have many applications.
-- One seller can submit many applications.
-- One task can be assigned to one seller (one task_assignment record).
+- CI workflow kept stable for branch and PR quality checks
+- Postman collection/environment aligned to final API contract
+- Team push, review, and release process documented for both members
 
-Common status fields:
+## Shared Completion Outcome
 
-- TaskStatus: OPEN, IN_PROGRESS, COMPLETED
-- ApplicationStatus: PENDING, ACCEPTED, REJECTED
+Together, Zisan and Nafiz completed:
 
-Audit fields:
+- Full backend + frontend feature parity with reference behavior
+- Stable automated testing and CI verification pipeline
+- Branch-based team workflow with atomic commit structure
+- Release readiness for `develop -> main`
+- Deployment readiness for Render with required environment variables
 
-- createdAt and updatedAt are automatically maintained for each entity through BaseEntity + JPA auditing.
+## Final Delivery State
 
-## 6. Testing Explanation (Very Detailed)
-
-### What is a unit test?
-
-A unit test checks one small piece of code in isolation.
-
-In this project, unit tests mostly target service classes.
-
-- Dependencies (repository, jwt service, etc.) are mocked.
-- Only service logic is tested.
-- This helps verify business rules without starting full app or real DB.
-
-### What is an integration test?
-
-An integration test checks multiple layers together.
-
-In this project, integration tests use:
-
-- Spring Boot test context
-- MockMvc for HTTP request simulation
-- Real controller + service + repository interaction
-- H2 in-memory database (test profile)
-
-### Which parts are tested?
-
-#### Unit test coverage
-
-1. AuthServiceImplTest
-- Register success
-- Default role assignment
-- Duplicate email rejection
-- Missing role auto-creation behavior
-- Login success
-- Login failure behavior
-
-2. TaskServiceImplTest
-- Create task success/failure
-- Task retrieval
-- Owner update rules
-- Admin override update/delete rules
-- Forbidden update for non-owner non-admin
-
-3. ApplicationServiceImplTest
-- Apply success
-- Apply blocked for non-OPEN task
-- Duplicate application blocked
-- Accept success flow with status updates
-- Non-owner accept blocked
-- Already-assigned task blocked
-
-#### Integration test coverage
-
-MarketplaceIntegrationTest validates full API behavior:
-
-- Unauthenticated task listing is rejected
-- Register + login flow works
-- Full happy path:
-  - buyer creates task
-  - seller applies
-  - buyer accepts
-- Duplicate application from same seller is rejected
-
-### How tests are written (JUnit, Mockito, MockMvc)
-
-#### JUnit 5
-
-- Main testing framework.
-- Defines test methods using @Test.
-- Handles assertions and test lifecycle.
-
-#### Mockito
-
-- Used in unit tests.
-- Creates mock objects for repositories/services.
-- Verifies interactions and behavior.
-- Keeps tests fast and focused.
-
-#### MockMvc
-
-- Used in integration tests.
-- Sends fake HTTP requests to endpoints.
-- Checks HTTP status and response body.
-- Good for testing API contracts end-to-end.
-
-### Why testing is important
-
-- Finds bugs before deployment.
-- Protects existing features when new code is added.
-- Gives confidence for refactoring.
-- Documents expected behavior in executable form.
-- Prevents security/business rule regressions.
-
-Without tests, small changes can silently break login, permissions, or status transitions.
-
-## 7. CI/CD Pipeline Explanation (Very Detailed)
-
-CI configuration file:
-
-- .github/workflows/ci.yml
-
-### What happens when code is pushed?
-
-When code is pushed to main or develop, or when a PR is opened:
-
-1. GitHub Actions starts automatically.
-2. Runner machine (ubuntu-latest) is created.
-3. Code is checked out.
-4. Java 17 is installed.
-5. Maven dependency cache is prepared.
-6. Maven command clean verify is executed.
-7. All unit and integration tests run.
-8. Docker image build is executed.
-
-If any step fails, workflow is marked failed.
-
-### How GitHub Actions works here
-
-- Workflow trigger rules are written in YAML.
-- Each run has one main job: build-and-test.
-- Steps run in sequence.
-- Concurrency rule cancels old running jobs for same branch update.
-
-### Build process details
-
-Maven clean verify does:
-
-- clean: removes old build files
-- compile: compiles source code
-- test: runs test suite
-- verify: validates full build lifecycle success
-
-### Test execution details
-
-- Unit tests run quickly with mocks.
-- Integration tests spin Spring context and use MockMvc + H2.
-- Failures stop pipeline immediately.
-
-### Why CI is important
-
-- Stops broken code from entering important branches.
-- Gives fast feedback to developers.
-- Makes team collaboration safer.
-- Standardizes quality checks for everyone.
-
-### How CI ensures code quality
-
-- Every change is tested the same way.
-- Security/permission regressions are caught early.
-- Docker build check ensures deployment artifact can be created.
-- PRs can be reviewed with confidence when CI is green.
-
-## 8. Docker Explanation
-
-### Why Docker is used
-
-Docker makes environment consistent.
-
-- Works same on every machine.
-- Removes local setup mismatch issues.
-- Packages app and dependencies in a container.
-
-### What Dockerfile does
-
-This project uses multi-stage build:
-
-1. Maven image builds jar file.
-2. Lightweight JRE image runs jar.
-
-This keeps runtime image smaller and cleaner.
-
-### What docker-compose does
-
-docker-compose starts multiple containers together:
-
-- postgres service (database)
-- app service (Spring Boot backend)
-
-It also:
-
-- sets environment variables
-- maps ports
-- adds DB health check
-- ensures app waits for DB readiness
-
-## 9. Deployment (Render) - Simple Explanation
-
-Render deployment is described in render.yaml.
-
-How it works:
-
-1. Render creates a managed PostgreSQL database.
-2. Render builds and runs the app from Dockerfile.
-3. Render injects environment variables (DB URL/user/password, JWT settings).
-4. App starts and connects to the managed database.
-5. New push to main can auto-deploy updated code.
-
-In short:
-
-- GitHub provides source code.
-- Render builds and hosts the app.
-- Managed database is attached automatically.
-
-## Extra Note on UI Technology
-
-The project includes Thymeleaf dependency in backend dependencies.
-
-Current UI pages are served from static resources (HTML/CSS/JS) in src/main/resources/static. This means the current UI is client-side rendered pages, not server-side Thymeleaf templates.
+- Baseline and remaining features integrated through team branch workflow
+- Project prepared for production deployment on Render
+- Team responsibilities remained clearly separated while preserving integration quality
