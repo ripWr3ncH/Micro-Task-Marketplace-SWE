@@ -29,23 +29,23 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf.disable())
             .httpBasic(httpBasic -> httpBasic.disable())
             .formLogin(formLogin -> formLogin.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/favicon.ico", "/error").permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/tasks/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/applications/**").hasAnyRole("SELLER", "ADMIN", "BUYER")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/applications/**").hasAnyRole("BUYER", "SELLER", "ADMIN")
-                        .anyRequest().authenticated()
-                )
-                .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/", "/*.html", "/css/**", "/js/**", "/favicon.ico", "/error").permitAll()
+                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/tasks/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/v1/applications/**").hasAnyRole("SELLER", "ADMIN", "BUYER")
+                .requestMatchers(HttpMethod.GET, "/api/v1/applications/**").hasAnyRole("BUYER", "SELLER", "ADMIN")
+                .anyRequest().authenticated()
+            )
+            .authenticationProvider(authenticationProvider())
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

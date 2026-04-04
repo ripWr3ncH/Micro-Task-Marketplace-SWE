@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Application Management | Micro Task Marketplace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body class="mtm-app" data-page-role="BUYER,ADMIN" data-page-key="applications">
+  <header class="mtm-topbar">
+    <div class="mtm-topbar-inner">
+      <div class="mtm-title">Application Management</div>
+      <nav class="mtm-nav">
+        <a href="/buyer-dashboard.html" data-role-visible="BUYER,ADMIN" data-nav-key="dashboard">Dashboard</a>
+        <a href="/available-tasks.html" data-role-visible="SELLER,ADMIN" data-nav-key="tasks">Available Tasks</a>
+        <a href="/create-task.html" data-role-visible="BUYER,ADMIN" data-nav-key="create">Create Task</a>
+        <a href="/apply-task.html" data-role-visible="SELLER,ADMIN" data-nav-key="apply">Apply</a>
+        <a class="active" href="/application-management.html" data-role-visible="BUYER,ADMIN" data-nav-key="applications">Applications</a>
+      </nav>
+      <span id="role-badge" class="mtm-chip mtm-role-badge open">ROLE</span>
+      <button class="mtm-btn soft" data-logout>Log Out</button>
+    </div>
+  </header>
+
+  <main class="mtm-shell mtm-grid" style="margin-top:1rem;">
+    <section class="mtm-panel">
+      <h1 id="role-page-title" class="mtm-h1">Review Applications</h1>
+      <p id="role-page-subtitle" class="mtm-sub">Enter a task id to pull applications, then accept directly from the list.</p>
+      <div class="mtm-row" style="margin-top:0.8rem;">
+        <input id="fetch-task-id" class="mtm-input" type="number" min="1" placeholder="Task ID" />
+        <button id="fetch-task-apps" class="mtm-btn" type="button">Load Applications</button>
+      </div>
+    </section>
+
+    <div id="page-alert" class="mtm-alert"></div>
+
+    <section id="applications-list" class="mtm-grid cards"></section>
+    <details id="action-details" class="mtm-details" hidden>
+      <summary>Technical details</summary>
+      <pre id="action-status" class="mtm-status"></pre>
+    </details>
+  </main>
+
+  <script src="/js/app.js" defer></script>
+</body>
+</html>
