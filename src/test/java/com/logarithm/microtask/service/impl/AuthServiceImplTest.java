@@ -98,25 +98,41 @@ class AuthServiceImplTest {
     @Test
     void registerShouldCreateRoleWhenMissing() {
         RegisterRequest request = RegisterRequest.builder()
-                .fullName("Admin")
-                .email("admin@test.com")
+            .fullName("Seller")
+            .email("seller@test.com")
                 .password("secret123")
-                .roles(Set.of(RoleName.ADMIN))
+            .roles(Set.of(RoleName.SELLER))
                 .build();
 
-        Role adminRole = Role.builder().name(RoleName.ADMIN).build();
+        Role sellerRole = Role.builder().name(RoleName.SELLER).build();
 
-        when(userRepository.existsByEmail("admin@test.com")).thenReturn(false);
-        when(roleRepository.findByName(RoleName.ADMIN)).thenReturn(Optional.empty());
-        when(roleRepository.save(any(Role.class))).thenReturn(adminRole);
+        when(userRepository.existsByEmail("seller@test.com")).thenReturn(false);
+        when(roleRepository.findByName(RoleName.SELLER)).thenReturn(Optional.empty());
+        when(roleRepository.save(any(Role.class))).thenReturn(sellerRole);
         when(passwordEncoder.encode("secret123")).thenReturn("encoded");
-        when(userDetailsService.loadUserByUsername("admin@test.com")).thenReturn(userDetails);
+        when(userDetailsService.loadUserByUsername("seller@test.com")).thenReturn(userDetails);
         when(jwtService.generateToken(userDetails)).thenReturn("token");
 
         var response = authService.register(request);
 
         assertThat(response.getToken()).isEqualTo("token");
         verify(roleRepository).save(any(Role.class));
+    }
+
+    @Test
+    void registerShouldRejectAdminSelfAssignment() {
+        RegisterRequest request = RegisterRequest.builder()
+                .fullName("Admin")
+                .email("admin@test.com")
+                .password("secret123")
+                .roles(Set.of(RoleName.ADMIN))
+                .build();
+
+        when(userRepository.existsByEmail("admin@test.com")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.register(request))
+                .isInstanceOf(BadRequestException.class)
+                .hasMessageContaining("ADMIN role cannot be self-assigned");
     }
 
     @Test
