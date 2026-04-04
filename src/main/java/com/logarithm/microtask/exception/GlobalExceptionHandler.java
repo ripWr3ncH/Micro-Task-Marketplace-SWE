@@ -3,6 +3,7 @@ package com.logarithm.microtask.exception;
 import com.logarithm.microtask.dto.common.ApiErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -51,6 +52,12 @@ public class GlobalExceptionHandler {
                 .map(v -> v.getPropertyPath() + ": " + v.getMessage())
                 .toList();
         return build(HttpStatus.BAD_REQUEST, "Constraint violation", request.getRequestURI(), details);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiErrorResponse> handleAuthentication(AuthenticationException ex,
+                                                                 HttpServletRequest request) {
+        return build(HttpStatus.UNAUTHORIZED, "Invalid credentials.", request.getRequestURI(), List.of());
     }
 
     @ExceptionHandler(Exception.class)
