@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | Micro Task Marketplace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body class="mtm-app" data-page-role="BUYER,ADMIN" data-page-key="dashboard">
+  <header class="mtm-topbar">
+    <div class="mtm-topbar-inner">
+      <div class="mtm-title">Marketplace Dashboard</div>
+      <nav class="mtm-nav">
+        <a class="active" href="/buyer-dashboard.html" data-role-visible="BUYER,ADMIN" data-nav-key="dashboard">Dashboard</a>
+        <a href="/available-tasks.html" data-role-visible="SELLER,ADMIN" data-nav-key="tasks">Available Tasks</a>
+        <a href="/create-task.html" data-role-visible="BUYER,ADMIN" data-nav-key="create">Create Task</a>
+        <a href="/apply-task.html" data-role-visible="SELLER,ADMIN" data-nav-key="apply">Apply</a>
+        <a href="/application-management.html" data-role-visible="BUYER,ADMIN" data-nav-key="applications">Applications</a>
+      </nav>
+      <span id="role-badge" class="mtm-chip mtm-role-badge open">ROLE</span>
+      <button class="mtm-btn soft" data-logout>Log Out</button>
+    </div>
+  </header>
+
+  <main class="mtm-shell mtm-grid" style="margin-top:1rem;">
+    <section class="mtm-panel">
+      <h1 id="role-page-title" class="mtm-h1">Task Overview</h1>
+      <p id="role-page-subtitle" class="mtm-sub">Live task metrics from the API.</p>
+      <div class="mtm-row" style="margin-top:0.8rem;">
+        <button id="dashboard-refresh" class="mtm-btn" type="button">Refresh</button>
+      </div>
+    </section>
+
+    <div id="page-alert" class="mtm-alert"></div>
+
+    <section class="mtm-grid cards">
+      <article class="mtm-stat"><p>Total</p><h3 id="metric-total">0</h3></article>
+      <article class="mtm-stat"><p>Open</p><h3 id="metric-open">0</h3></article>
+      <article class="mtm-stat"><p>In Progress</p><h3 id="metric-progress">0</h3></article>
+      <article class="mtm-stat"><p>Completed</p><h3 id="metric-completed">0</h3></article>
+    </section>
+
+    <section class="mtm-panel">
+      <div class="mtm-table-wrap">
+        <table class="mtm-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Budget</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="dashboard-task-rows"></tbody>
+        </table>
+      </div>
+      <details id="action-details" class="mtm-details" hidden>
+        <summary>Technical details</summary>
+        <pre id="action-status" class="mtm-status"></pre>
+      </details>
+    </section>
+  </main>
+
+  <script src="/js/app.js" defer></script>
+</body>
+</html>

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sign Up | Micro Task Marketplace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body class="mtm-auth">
+  <main class="mtm-auth-card">
+    <div class="mtm-brand">
+      <h1>Create Your Account</h1>
+      <p>Choose a role and start using the marketplace.</p>
+    </div>
+
+    <div id="register-error-box" class="mtm-error">
+      <span id="register-error-text"></span>
+    </div>
+
+    <div id="page-alert" class="mtm-alert" style="margin-top:0.8rem;"></div>
+
+    <form id="register-form" class="mtm-form" novalidate>
+      <label for="register-name">Full Name</label>
+      <input class="mtm-input" id="register-name" name="fullName" type="text" required />
+
+      <label for="register-email">Email</label>
+      <input class="mtm-input" id="register-email" name="email" type="email" autocomplete="email" required />
+
+      <label for="register-password">Password</label>
+      <input class="mtm-input" id="register-password" name="password" type="password" autocomplete="new-password" required />
+
+      <label for="register-role">Role</label>
+      <select class="mtm-select" id="register-role" name="role" required>
+        <option value="BUYER">Buyer</option>
+        <option value="SELLER">Seller</option>
+        <option value="ADMIN">Admin</option>
+      </select>
+
+      <button class="mtm-btn" type="submit">Create Account</button>
+    </form>
+
+    <p class="mtm-helper">Already have an account? <a href="/index.html">Sign in</a></p>
+    <details id="action-details" class="mtm-details" hidden>
+      <summary>Technical details</summary>
+      <pre id="action-status" class="mtm-status"></pre>
+    </details>
+  </main>
+  <script src="/js/app.js" defer></script>
+</body>
+</html>
