@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Task | Micro Task Marketplace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body class="mtm-app" data-page-role="BUYER,ADMIN" data-page-key="create">
+  <header class="mtm-topbar">
+    <div class="mtm-topbar-inner">
+      <div class="mtm-title">Create New Task</div>
+      <nav class="mtm-nav">
+        <a href="/buyer-dashboard.html" data-role-visible="BUYER,ADMIN" data-nav-key="dashboard">Dashboard</a>
+        <a href="/available-tasks.html" data-role-visible="SELLER,ADMIN" data-nav-key="tasks">Available Tasks</a>
+        <a class="active" href="/create-task.html" data-role-visible="BUYER,ADMIN" data-nav-key="create">Create Task</a>
+        <a href="/apply-task.html" data-role-visible="SELLER,ADMIN" data-nav-key="apply">Apply</a>
+        <a href="/application-management.html" data-role-visible="BUYER,ADMIN" data-nav-key="applications">Applications</a>
+      </nav>
+      <span id="role-badge" class="mtm-chip mtm-role-badge open">ROLE</span>
+      <button class="mtm-btn soft" data-logout>Log Out</button>
+    </div>
+  </header>
+
+  <main class="mtm-shell mtm-grid" style="margin-top:1rem;">
+    <section class="mtm-panel">
+      <h1 id="role-page-title" class="mtm-h1">Publish a Task</h1>
+      <p id="role-page-subtitle" class="mtm-sub">All fields map directly to the backend task creation request.</p>
+      <div id="page-alert" class="mtm-alert" style="margin-top:0.8rem;"></div>
+      <form id="task-form" class="mtm-form" style="margin-top:0.8rem;">
+        <label for="task-title">Title</label>
+        <input id="task-title" class="mtm-input" type="text" maxlength="100" required />
+
+        <label for="task-description">Description</label>
+        <textarea id="task-description" class="mtm-textarea" maxlength="1000" required></textarea>
+
+        <label for="task-budget">Budget</label>
+        <input id="task-budget" class="mtm-input" type="number" min="1" step="0.01" required />
+
+        <button class="mtm-btn" type="submit">Create Task</button>
+      </form>
+      <details id="action-details" class="mtm-details" hidden>
+        <summary>Technical details</summary>
+        <pre id="action-status" class="mtm-status"></pre>
+      </details>
+    </section>
+  </main>
+
+  <script src="/js/app.js" defer></script>
+</body>
+</html>
