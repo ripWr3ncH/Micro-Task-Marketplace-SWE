@@ -46,6 +46,10 @@ public class AuthServiceImpl implements AuthService {
                 ? Set.of(RoleName.BUYER)
                 : request.getRoles();
 
+        if (requestedRoles.contains(RoleName.ADMIN)) {
+            throw new BadRequestException("ADMIN role cannot be self-assigned.");
+        }
+
         Set<Role> resolvedRoles = new HashSet<>();
         for (RoleName roleName : requestedRoles) {
             Role role = roleRepository.findByName(roleName)

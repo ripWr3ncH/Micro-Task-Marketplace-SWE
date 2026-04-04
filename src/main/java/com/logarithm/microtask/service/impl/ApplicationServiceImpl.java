@@ -8,6 +8,7 @@ import com.logarithm.microtask.entity.Task;
 import com.logarithm.microtask.entity.TaskAssignment;
 import com.logarithm.microtask.entity.User;
 import com.logarithm.microtask.entity.enums.ApplicationStatus;
+import com.logarithm.microtask.entity.enums.RoleName;
 import com.logarithm.microtask.entity.enums.TaskStatus;
 import com.logarithm.microtask.exception.BadRequestException;
 import com.logarithm.microtask.exception.ForbiddenOperationException;
@@ -44,6 +45,12 @@ public class ApplicationServiceImpl implements ApplicationService {
 
         User seller = userRepository.findByEmail(sellerEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + sellerEmail));
+
+        boolean hasSellerRole = seller.getRoles().stream()
+            .anyMatch(role -> role.getName() == RoleName.SELLER);
+        if (!hasSellerRole) {
+            throw new ForbiddenOperationException("Only SELLER accounts can apply to tasks.");
+        }
 
         if (applicationRepository.existsByTaskIdAndSellerId(task.getId(), seller.getId())) {
             throw new BadRequestException("You have already applied to this task.");

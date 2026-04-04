@@ -3,6 +3,7 @@ const STORAGE_KEY = "mtm_session";
 const API = {
   register: "/api/v1/auth/register",
   login: "/api/v1/auth/login",
+  logout: "/api/v1/auth/logout",
   tasks: "/api/v1/tasks",
   applications: "/api/v1/applications"
 };
@@ -332,8 +333,13 @@ function setAuthError(type, message) {
 
 function attachLogout() {
   document.querySelectorAll("[data-logout]").forEach((button) => {
-    button.addEventListener("click", (e) => {
+    button.addEventListener("click", async (e) => {
       e.preventDefault();
+      try {
+        await request(API.logout, { method: "POST" });
+      } catch {
+        // Ignore logout API errors; clear local session regardless.
+      }
       clearSession();
       window.location.href = "/index.html";
     });

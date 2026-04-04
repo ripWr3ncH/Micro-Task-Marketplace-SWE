@@ -1,6 +1,7 @@
 package com.logarithm.microtask.config;
 
 import com.logarithm.microtask.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,14 +34,20 @@ public class SecurityConfig {
             .httpBasic(httpBasic -> httpBasic.disable())
             .formLogin(formLogin -> formLogin.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) ->
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
+            )
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/", "/*.html", "/css/**", "/js/**", "/favicon.ico", "/error").permitAll()
-                .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").authenticated()
                 .requestMatchers(HttpMethod.GET, "/api/v1/tasks/**").authenticated()
                 .requestMatchers(HttpMethod.POST, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
                 .requestMatchers(HttpMethod.PUT, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
-                .requestMatchers(HttpMethod.POST, "/api/v1/applications/**").hasAnyRole("SELLER", "ADMIN", "BUYER")
+                .requestMatchers(HttpMethod.POST, "/api/v1/applications").hasRole("SELLER")
+                .requestMatchers(HttpMethod.POST, "/api/v1/applications/*/accept").hasAnyRole("BUYER", "ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/v1/applications/**").hasAnyRole("BUYER", "SELLER", "ADMIN")
                 .anyRequest().authenticated()
             )
