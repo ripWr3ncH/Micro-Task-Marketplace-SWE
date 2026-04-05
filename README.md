@@ -44,7 +44,7 @@ High-level flow:
 
 ## ER Diagram
 
-📌 [Insert ER Diagram Here]
+![Micro Task Marketplace ER Diagram](images/ER.png)
 
 Core relationships:
 
