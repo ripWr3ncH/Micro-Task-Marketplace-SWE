@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,25 +22,42 @@ public class AdminBootstrapRunner implements CommandLineRunner {
 
     private static final Logger log = LoggerFactory.getLogger(AdminBootstrapRunner.class);
 
-    private static final String ADMIN_EMAIL = "admin@gmail.com";
-    private static final String ADMIN_PASSWORD = "admin123";
-    private static final String ADMIN_FULL_NAME = "System Admin";
-
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
+    @Value("${app.bootstrap.admin.enabled:false}")
+    private boolean adminBootstrapEnabled;
+
+    @Value("${app.bootstrap.admin.email:}")
+    private String adminEmail;
+
+    @Value("${app.bootstrap.admin.password:}")
+    private String adminPassword;
+
+    @Value("${app.bootstrap.admin.full-name:System Admin}")
+    private String adminFullName;
+
     @Override
     @Transactional
     public void run(String... args) {
+        if (!adminBootstrapEnabled) {
+            return;
+        }
+
+        if (adminEmail == null || adminEmail.isBlank() || adminPassword == null || adminPassword.isBlank()) {
+            log.warn("Admin bootstrap is enabled but email/password is missing. Skipping admin bootstrap.");
+            return;
+        }
+
         Role adminRole = roleRepository.findByName(RoleName.ADMIN)
                 .orElseGet(() -> roleRepository.save(Role.builder().name(RoleName.ADMIN).build()));
 
-        User adminUser = userRepository.findByEmail(ADMIN_EMAIL)
+        User adminUser = userRepository.findByEmail(adminEmail)
                 .orElseGet(() -> User.builder()
-                        .fullName(ADMIN_FULL_NAME)
-                        .email(ADMIN_EMAIL)
-                        .password(passwordEncoder.encode(ADMIN_PASSWORD))
+                        .fullName(adminFullName)
+                        .email(adminEmail)
+                        .password(passwordEncoder.encode(adminPassword))
                         .roles(new HashSet<>())
                         .build());
 
@@ -48,13 +66,13 @@ public class AdminBootstrapRunner implements CommandLineRunner {
         }
 
         adminUser.getRoles().add(adminRole);
-        adminUser.setPassword(passwordEncoder.encode(ADMIN_PASSWORD));
+        adminUser.setPassword(passwordEncoder.encode(adminPassword));
 
         if (adminUser.getFullName() == null || adminUser.getFullName().isBlank()) {
-            adminUser.setFullName(ADMIN_FULL_NAME);
+            adminUser.setFullName(adminFullName);
         }
 
         userRepository.save(adminUser);
-        log.info("Admin bootstrap ensured for {}", ADMIN_EMAIL);
+        log.info("Admin bootstrap ensured for {}", adminEmail);
     }
 }

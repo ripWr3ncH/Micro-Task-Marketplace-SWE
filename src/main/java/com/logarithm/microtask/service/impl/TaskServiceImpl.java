@@ -54,6 +54,14 @@ public class TaskServiceImpl implements TaskService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    public List<TaskResponse> getTasksByBuyer(String userEmail) {
+        User buyer = userRepository.findByEmail(userEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + userEmail));
+        return taskRepository.findByBuyerId(buyer.getId()).stream().map(this::mapToResponse).toList();
+    }
+
+    @Override
     public TaskResponse updateTask(Long taskId, TaskUpdateRequest request, String userEmail, boolean isAdmin) {
         Task task = findTask(taskId);
         checkTaskOwner(task, userEmail, isAdmin);

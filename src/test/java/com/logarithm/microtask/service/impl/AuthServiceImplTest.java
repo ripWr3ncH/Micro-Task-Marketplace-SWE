@@ -9,6 +9,7 @@ import com.logarithm.microtask.exception.BadRequestException;
 import com.logarithm.microtask.repository.RoleRepository;
 import com.logarithm.microtask.repository.UserRepository;
 import com.logarithm.microtask.security.JwtService;
+import com.logarithm.microtask.security.TokenRevocationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,6 +51,9 @@ class AuthServiceImplTest {
 
     @Mock
     private UserDetailsService userDetailsService;
+
+    @Mock
+    private TokenRevocationService tokenRevocationService;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -166,5 +170,12 @@ class AuthServiceImplTest {
         var response = authService.login(LoginRequest.builder().email("user@test.com").password("secret").build());
 
         assertThat(response.getRoles()).contains("SELLER");
+    }
+
+    @Test
+    void logoutShouldRevokeToken() {
+        authService.logout("some-jwt-token");
+
+        verify(tokenRevocationService).revokeToken("some-jwt-token");
     }
 }

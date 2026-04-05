@@ -42,6 +42,11 @@ public class TaskController {
         return ResponseEntity.ok(taskService.getAllTasks());
     }
 
+    @GetMapping("/mine")
+    public ResponseEntity<List<TaskResponse>> getMyTasks(Authentication authentication) {
+        return ResponseEntity.ok(taskService.getTasksByBuyer(authentication.getName()));
+    }
+
     @GetMapping("/{taskId}")
     public ResponseEntity<TaskResponse> getTaskById(@PathVariable @Positive(message = "Task ID must be greater than 0") Long taskId) {
         return ResponseEntity.ok(taskService.getTaskById(taskId));

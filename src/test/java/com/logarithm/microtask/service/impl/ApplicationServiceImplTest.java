@@ -128,11 +128,67 @@ class ApplicationServiceImplTest {
     void getApplicationsByTaskShouldReturnList() {
         Application app = Application.builder().task(task).seller(seller).status(ApplicationStatus.PENDING).proposedAmount(BigDecimal.ONE).coverLetter("x").build();
         app.setId(44L);
+        when(taskRepository.findById(10L)).thenReturn(Optional.of(task));
         when(applicationRepository.findByTaskId(10L)).thenReturn(List.of(app));
 
-        var responses = applicationService.getApplicationsByTask(10L);
+        var responses = applicationService.getApplicationsByTask(10L, "buyer@test.com", false);
 
         assertThat(responses).hasSize(1);
+    }
+
+    @Test
+    void getApplicationsByTaskShouldFailForNonOwner() {
+        when(taskRepository.findById(10L)).thenReturn(Optional.of(task));
+
+        assertThatThrownBy(() -> applicationService.getApplicationsByTask(10L, "other@test.com", false))
+                .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    @Test
+    void getMyApplicationsShouldReturnSellerApplications() {
+        Application app = Application.builder()
+                .task(task)
+                .seller(seller)
+                .status(ApplicationStatus.PENDING)
+                .proposedAmount(BigDecimal.ONE)
+                .coverLetter("x")
+                .build();
+        app.setId(99L);
+
+        when(userRepository.findByEmail("seller@test.com")).thenReturn(Optional.of(seller));
+        when(applicationRepository.findBySellerId(2L)).thenReturn(List.of(app));
+
+        var responses = applicationService.getMyApplications("seller@test.com");
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getSellerId()).isEqualTo(2L);
+    }
+
+    @Test
+    void getMyApplicationsShouldFailForNonSeller() {
+        when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
+
+        assertThatThrownBy(() -> applicationService.getMyApplications("buyer@test.com"))
+                .isInstanceOf(ForbiddenOperationException.class);
+    }
+
+    @Test
+    void getAllApplicationsForAdminShouldReturnList() {
+        Application app = Application.builder()
+                .task(task)
+                .seller(seller)
+                .status(ApplicationStatus.PENDING)
+                .proposedAmount(BigDecimal.ONE)
+                .coverLetter("x")
+                .build();
+        app.setId(77L);
+
+        when(applicationRepository.findAll()).thenReturn(List.of(app));
+
+        var responses = applicationService.getAllApplicationsForAdmin();
+
+        assertThat(responses).hasSize(1);
+        assertThat(responses.get(0).getId()).isEqualTo(77L);
     }
 
     @Test
