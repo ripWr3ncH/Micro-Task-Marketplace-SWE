@@ -17,6 +17,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -28,11 +29,14 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceImplTest {
+
+    private static final String BCRYPT_HASH = "$2a$10$7EqJtq98hPqEX7fNZaFWoOeRz4fA6F2hM7Qwqf7xGX2YeliYg5OtK";
 
     @Mock
     private UserRepository userRepository;
@@ -141,7 +145,11 @@ class AuthServiceImplTest {
 
     @Test
     void loginShouldSucceed() {
-        User user = User.builder().email("user@test.com").password("encoded").roles(Set.of(Role.builder().name(RoleName.BUYER).build())).build();
+        User user = User.builder()
+            .email("user@test.com")
+            .password(BCRYPT_HASH)
+            .roles(Set.of(Role.builder().name(RoleName.BUYER).build()))
+            .build();
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
         when(userDetailsService.loadUserByUsername("user@test.com")).thenReturn(userDetails);
         when(jwtService.generateToken(userDetails)).thenReturn("token");
@@ -153,16 +161,20 @@ class AuthServiceImplTest {
     }
 
     @Test
-    void loginShouldThrowWhenUserMissingAfterAuth() {
+    void loginShouldThrowWhenUserMissing() {
         when(userRepository.findByEmail("missing@test.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> authService.login(LoginRequest.builder().email("missing@test.com").password("secret").build()))
-                .isInstanceOf(BadRequestException.class);
+                .isInstanceOf(BadCredentialsException.class);
     }
 
     @Test
     void loginShouldIncludeRoles() {
-        User user = User.builder().email("user@test.com").password("encoded").roles(Set.of(Role.builder().name(RoleName.SELLER).build())).build();
+        User user = User.builder()
+            .email("user@test.com")
+            .password(BCRYPT_HASH)
+            .roles(Set.of(Role.builder().name(RoleName.SELLER).build()))
+            .build();
         when(userRepository.findByEmail("user@test.com")).thenReturn(Optional.of(user));
         when(userDetailsService.loadUserByUsername("user@test.com")).thenReturn(userDetails);
         when(jwtService.generateToken(userDetails)).thenReturn("token");
@@ -170,6 +182,45 @@ class AuthServiceImplTest {
         var response = authService.login(LoginRequest.builder().email("user@test.com").password("secret").build());
 
         assertThat(response.getRoles()).contains("SELLER");
+    }
+
+    @Test
+    void loginShouldMigrateLegacyPlaintextPasswordAndSucceed() {
+        User user = User.builder()
+                .email("legacy@test.com")
+                .password("legacyPass")
+                .roles(Set.of(Role.builder().name(RoleName.BUYER).build()))
+                .build();
+
+        when(userRepository.findByEmail("legacy@test.com")).thenReturn(Optional.of(user));
+        when(passwordEncoder.encode("legacyPass")).thenReturn(BCRYPT_HASH);
+        when(userDetailsService.loadUserByUsername("legacy@test.com")).thenReturn(userDetails);
+        when(jwtService.generateToken(userDetails)).thenReturn("token");
+
+        var response = authService.login(LoginRequest.builder().email("legacy@test.com").password("legacyPass").build());
+
+        assertThat(response.getToken()).isEqualTo("token");
+        verify(userRepository).save(user);
+        verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
+    }
+
+    @Test
+    void loginShouldRejectLegacyPlaintextPasswordWhenMismatched() {
+        User user = User.builder()
+                .email("legacy@test.com")
+                .password("legacyPass")
+                .roles(Set.of(Role.builder().name(RoleName.BUYER).build()))
+                .build();
+
+        when(userRepository.findByEmail("legacy@test.com")).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> authService.login(LoginRequest.builder()
+                .email("legacy@test.com")
+                .password("wrongPass")
+                .build()))
+                .isInstanceOf(BadCredentialsException.class);
+
+        verify(authenticationManager, never()).authenticate(any(UsernamePasswordAuthenticationToken.class));
     }
 
     @Test
