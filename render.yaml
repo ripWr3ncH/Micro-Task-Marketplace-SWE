@@ -30,3 +30,11 @@ services:
         value: "86400000"
       - key: SPRING_JPA_HIBERNATE_DDL_AUTO
         value: update
+      - key: APP_BOOTSTRAP_ADMIN_ENABLED
+        value: "true"
+      - key: APP_BOOTSTRAP_ADMIN_EMAIL
+        value: "admin@gmail.com"
+      - key: APP_BOOTSTRAP_ADMIN_PASSWORD
+        value: "admin123"
+      - key: APP_BOOTSTRAP_ADMIN_FULL_NAME
+        value: "System Admin"

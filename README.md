@@ -4,6 +4,12 @@ A full-stack role-based marketplace where buyers post micro tasks, sellers apply
 
 This project is built with Spring Boot, JWT security, PostgreSQL, and a role-aware web UI.
 
+## Live Demo
+
+**[https://micro-task-marketplace-swe.onrender.com/](https://micro-task-marketplace-swe.onrender.com/)**
+
+> Admin credentials: `admin@gmail.com` / `admin123`
+
 ## Features
 
 - JWT authentication with secure login and registration
