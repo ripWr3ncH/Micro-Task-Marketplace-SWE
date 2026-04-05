@@ -21,7 +21,7 @@ const ROLE_GROUPS = {
   tasks: ["SELLER", "ADMIN"],
   create: ["BUYER", "ADMIN"],
   applications: ["BUYER", "ADMIN"],
-  apply: ["SELLER", "ADMIN"]
+  apply: ["SELLER"]
 };
 
 const NAV_LABELS = {
@@ -506,7 +506,7 @@ function renderDashboardTasks(tasks) {
       <td>${task.title || "Untitled"}</td>
       <td>$${task.budget ?? "0"}</td>
       <td><span class="mtm-chip ${statusClass(task.status)}">${task.status || "OPEN"}</span></td>
-      <td>${canApply ? `<a href="/apply-task.html?taskId=${task.id || ""}">Apply</a>` : `<span class="mtm-muted">Seller role required</span>`}</td>
+      <td>${canApply ? `<a href="/apply-task.html?taskId=${task.id || ""}">Apply</a>` : `<span class="mtm-muted">N/A</span>`}</td>
     `;
     rows.appendChild(tr);
   });
@@ -560,6 +560,7 @@ function renderAvailableTasks(tasks) {
     return;
   }
 
+  const canApply = hasAnyRole(ROLE_GROUPS.apply);
   tasks.forEach((task) => {
     const card = document.createElement("article");
     card.className = "mtm-card";
@@ -571,7 +572,7 @@ function renderAvailableTasks(tasks) {
         <span class="mtm-chip ${statusClass(task.status)}">${task.status || "OPEN"}</span>
       </div>
       <div class="mtm-actions">
-        <a class="mtm-btn" href="/apply-task.html?taskId=${task.id || ""}">Apply</a>
+        ${canApply ? `<a class="mtm-btn" href="/apply-task.html?taskId=${task.id || ""}">Apply</a>` : `<span class="mtm-muted">Seller-only action</span>`}
       </div>
     `;
     host.appendChild(card);
