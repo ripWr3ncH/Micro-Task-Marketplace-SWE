@@ -44,7 +44,7 @@ public class User extends BaseEntity {
     private String password;
 
     @Builder.Default
-    @Column(nullable = false)
+    @Column(nullable = false, columnDefinition = "boolean not null default false")
     private boolean blocked = false;
 
     @Builder.Default
