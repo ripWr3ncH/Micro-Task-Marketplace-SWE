@@ -10,6 +10,7 @@ import com.logarithm.microtask.exception.BadRequestException;
 import com.logarithm.microtask.repository.RoleRepository;
 import com.logarithm.microtask.repository.UserRepository;
 import com.logarithm.microtask.security.JwtService;
+import com.logarithm.microtask.security.TokenRevocationService;
 import com.logarithm.microtask.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -35,6 +36,7 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
+        private final TokenRevocationService tokenRevocationService;
 
     @Override
     public AuthResponse register(RegisterRequest request) {
@@ -96,4 +98,9 @@ public class AuthServiceImpl implements AuthService {
                 .roles(user.getRoles().stream().map(r -> r.getName().name()).collect(Collectors.toSet()))
                 .build();
     }
+
+        @Override
+        public void logout(String token) {
+                tokenRevocationService.revokeToken(token);
+        }
 }

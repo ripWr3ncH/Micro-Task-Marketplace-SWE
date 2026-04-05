@@ -69,8 +69,36 @@ public class ApplicationServiceImpl implements ApplicationService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ApplicationResponse> getApplicationsByTask(Long taskId) {
+    public List<ApplicationResponse> getApplicationsByTask(Long taskId, String userEmail, boolean isAdmin) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
+
+        if (!isAdmin && !task.getBuyer().getEmail().equalsIgnoreCase(userEmail)) {
+            throw new ForbiddenOperationException("You are not allowed to view applications for this task.");
+        }
+
         return applicationRepository.findByTaskId(taskId).stream().map(this::mapToResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ApplicationResponse> getMyApplications(String sellerEmail) {
+        User seller = userRepository.findByEmail(sellerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + sellerEmail));
+
+        boolean hasSellerRole = seller.getRoles().stream()
+                .anyMatch(role -> role.getName() == RoleName.SELLER);
+        if (!hasSellerRole) {
+            throw new ForbiddenOperationException("Only SELLER accounts can view their applications.");
+        }
+
+        return applicationRepository.findBySellerId(seller.getId()).stream().map(this::mapToResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ApplicationResponse> getAllApplicationsForAdmin() {
+        return applicationRepository.findAll().stream().map(this::mapToResponse).toList();
     }
 
     @Override
