@@ -236,6 +236,13 @@ body {
   letter-spacing: -0.02em;
 }
 
+.mtm-h2 {
+  margin: 0;
+  font-family: Manrope, Inter, sans-serif;
+  font-size: clamp(1.05rem, 1.6vw, 1.35rem);
+  letter-spacing: -0.01em;
+}
+
 .mtm-sub {
   margin: 0.35rem 0 0;
   color: var(--muted);
@@ -321,6 +328,10 @@ body {
 .mtm-chip.inprogress { background: rgba(245, 158, 11, 0.16); color: #b45309; }
 .mtm-chip.completed { background: rgba(16, 185, 129, 0.16); color: var(--ok); }
 .mtm-chip.rejected { background: rgba(220, 38, 38, 0.14); color: var(--bad); }
+.mtm-chip.pending { background: rgba(99, 102, 241, 0.14); color: #4338ca; }
+.mtm-chip.accepted { background: rgba(16, 185, 129, 0.16); color: var(--ok); }
+.mtm-chip.blocked { background: rgba(220, 38, 38, 0.14); color: var(--bad); }
+.mtm-chip.active { background: rgba(16, 185, 129, 0.16); color: var(--ok); }
 
 .mtm-card {
   border-radius: 0.95rem;
@@ -355,6 +366,23 @@ body {
   display: flex;
   gap: 0.45rem;
   flex-wrap: wrap;
+}
+
+.mtm-actions.compact {
+  gap: 0.35rem;
+}
+
+.mtm-actions .mtm-btn {
+  padding: 0.44rem 0.66rem;
+  font-size: 0.75rem;
+  box-shadow: none;
+}
+
+.mtm-actions .mtm-select {
+  width: auto;
+  min-width: 132px;
+  padding: 0.44rem 0.5rem;
+  font-size: 0.76rem;
 }
 
 .mtm-alert {

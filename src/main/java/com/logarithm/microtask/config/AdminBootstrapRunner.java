@@ -67,6 +67,7 @@ public class AdminBootstrapRunner implements CommandLineRunner {
 
         adminUser.getRoles().add(adminRole);
         adminUser.setPassword(passwordEncoder.encode(adminPassword));
+        adminUser.setBlocked(false);
 
         if (adminUser.getFullName() == null || adminUser.getFullName().isBlank()) {
             adminUser.setFullName(adminFullName);
