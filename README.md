@@ -29,9 +29,7 @@ This project is built with Spring Boot, JWT security, PostgreSQL, and a role-awa
 - Testing: JUnit 5, Mockito, Spring Boot Test, MockMvc
 - DevOps: Docker, Docker Compose, GitHub Actions, Render
 
-## System Architecture
 
-📌 [Insert Architecture Diagram Here]
 
 High-level flow:
 
