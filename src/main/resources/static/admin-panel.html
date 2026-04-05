@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard | Micro Task Marketplace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=Manrope:wght@700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/styles.css" />
+</head>
+<body class="mtm-app" data-page-role="ADMIN" data-page-key="admin">
+  <header class="mtm-topbar">
+    <div class="mtm-topbar-inner">
+      <div class="mtm-title">Admin Dashboard</div>
+      <nav class="mtm-nav">
+        <a class="active" href="/admin-panel.html" data-role-visible="ADMIN" data-nav-key="dashboard">Dashboard</a>
+        <a href="/available-tasks.html" data-role-visible="SELLER,ADMIN" data-nav-key="tasks">Available Tasks</a>
+        <a href="/create-task.html" data-role-visible="BUYER,ADMIN" data-nav-key="create">Create Task</a>
+        <a href="/application-management.html" data-role-visible="BUYER,ADMIN" data-nav-key="applications">Applications</a>
+      </nav>
+      <span id="role-badge" class="mtm-chip mtm-role-badge completed">ADMIN</span>
+      <button class="mtm-btn soft" data-logout>Log Out</button>
+    </div>
+  </header>
+
+  <main class="mtm-shell mtm-grid" style="margin-top:1rem;">
+    <section class="mtm-panel">
+      <h1 id="role-page-title" class="mtm-h1">Platform Control Center</h1>
+      <p id="role-page-subtitle" class="mtm-sub">Review marketplace-wide activity and moderate tasks quickly.</p>
+      <div class="mtm-row" style="margin-top:0.8rem;">
+        <button id="admin-refresh" class="mtm-btn" type="button">Refresh Dashboard</button>
+      </div>
+    </section>
+
+    <div id="page-alert" class="mtm-alert"></div>
+
+    <section class="mtm-grid cards">
+      <article class="mtm-stat"><p>Total Tasks</p><h3 id="admin-metric-total-tasks">0</h3></article>
+      <article class="mtm-stat"><p>Open Tasks</p><h3 id="admin-metric-open-tasks">0</h3></article>
+      <article class="mtm-stat"><p>In Progress</p><h3 id="admin-metric-progress-tasks">0</h3></article>
+      <article class="mtm-stat"><p>Completed Tasks</p><h3 id="admin-metric-completed-tasks">0</h3></article>
+      <article class="mtm-stat"><p>Total Applications</p><h3 id="admin-metric-total-applications">0</h3></article>
+      <article class="mtm-stat"><p>Pending Applications</p><h3 id="admin-metric-pending-applications">0</h3></article>
+      <article class="mtm-stat"><p>Total Users</p><h3 id="admin-metric-total-users">0</h3></article>
+      <article class="mtm-stat"><p>Blocked Users</p><h3 id="admin-metric-blocked-users">0</h3></article>
+    </section>
+
+    <section class="mtm-panel">
+      <h2 class="mtm-h2">Task Moderation</h2>
+      <p class="mtm-sub">Delete inappropriate tasks or update statuses directly from the table.</p>
+      <div class="mtm-table-wrap" style="margin-top:0.75rem;">
+        <table class="mtm-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Buyer</th>
+              <th>Budget</th>
+              <th>Status</th>
+              <th>Assigned Seller</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-task-rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="mtm-panel">
+      <h2 class="mtm-h2">Application Monitoring</h2>
+      <p class="mtm-sub">Audit all submitted applications and jump to detailed review.</p>
+      <div class="mtm-table-wrap" style="margin-top:0.75rem;">
+        <table class="mtm-table">
+          <thead>
+            <tr>
+              <th>App ID</th>
+              <th>Task ID</th>
+              <th>Seller</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Submitted</th>
+            </tr>
+          </thead>
+          <tbody id="admin-application-rows"></tbody>
+        </table>
+      </div>
+      <p class="mtm-note" style="margin-top:0.75rem;">Need to accept an application? Open Application Management for task-level accept/reject actions.</p>
+    </section>
+
+    <section class="mtm-panel">
+      <h2 class="mtm-h2">User Management</h2>
+      <p class="mtm-sub">View users, block/unblock suspicious accounts, and delete users when required.</p>
+      <div class="mtm-table-wrap" style="margin-top:0.75rem;">
+        <table class="mtm-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Roles</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="admin-user-rows"></tbody>
+        </table>
+      </div>
+      <p class="mtm-note" style="margin-top:0.75rem;">For safety, ADMIN accounts cannot be blocked or deleted from this panel.</p>
+    </section>
+
+    <details id="action-details" class="mtm-details" hidden>
+      <summary>Technical details</summary>
+      <pre id="action-status" class="mtm-status"></pre>
+    </details>
+  </main>
+
+  <script src="/js/app.js" defer></script>
+</body>
+</html>

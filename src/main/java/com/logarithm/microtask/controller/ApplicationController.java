@@ -36,8 +36,21 @@ public class ApplicationController {
     }
 
     @GetMapping("/task/{taskId}")
-    public ResponseEntity<List<ApplicationResponse>> getApplicationsByTask(@PathVariable @Positive(message = "Task ID must be greater than 0") Long taskId) {
-        return ResponseEntity.ok(applicationService.getApplicationsByTask(taskId));
+    public ResponseEntity<List<ApplicationResponse>> getApplicationsByTask(@PathVariable @Positive(message = "Task ID must be greater than 0") Long taskId,
+                                                                           Authentication authentication) {
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        return ResponseEntity.ok(applicationService.getApplicationsByTask(taskId, authentication.getName(), isAdmin));
+    }
+
+    @GetMapping("/mine")
+    public ResponseEntity<List<ApplicationResponse>> getMyApplications(Authentication authentication) {
+        return ResponseEntity.ok(applicationService.getMyApplications(authentication.getName()));
+    }
+
+    @GetMapping("/admin/all")
+    public ResponseEntity<List<ApplicationResponse>> getAllApplicationsForAdmin() {
+        return ResponseEntity.ok(applicationService.getAllApplicationsForAdmin());
     }
 
     @PostMapping("/{applicationId}/accept")

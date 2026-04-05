@@ -16,6 +16,12 @@ server:
   port: 8080
 
 app:
+  bootstrap:
+    admin:
+      enabled: false
+      email: <ADMIN_EMAIL>
+      password: <ADMIN_PASSWORD>
+      full-name: System Admin
   security:
     jwt:
       secret: <BASE64_256_BIT_SECRET>

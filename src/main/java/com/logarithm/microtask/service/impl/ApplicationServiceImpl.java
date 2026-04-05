@@ -8,6 +8,7 @@ import com.logarithm.microtask.entity.Task;
 import com.logarithm.microtask.entity.TaskAssignment;
 import com.logarithm.microtask.entity.User;
 import com.logarithm.microtask.entity.enums.ApplicationStatus;
+import com.logarithm.microtask.entity.enums.RoleName;
 import com.logarithm.microtask.entity.enums.TaskStatus;
 import com.logarithm.microtask.exception.BadRequestException;
 import com.logarithm.microtask.exception.ForbiddenOperationException;
@@ -45,6 +46,12 @@ public class ApplicationServiceImpl implements ApplicationService {
         User seller = userRepository.findByEmail(sellerEmail)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found: " + sellerEmail));
 
+        boolean hasSellerRole = seller.getRoles().stream()
+            .anyMatch(role -> role.getName() == RoleName.SELLER);
+        if (!hasSellerRole) {
+            throw new ForbiddenOperationException("Only SELLER accounts can apply to tasks.");
+        }
+
         if (applicationRepository.existsByTaskIdAndSellerId(task.getId(), seller.getId())) {
             throw new BadRequestException("You have already applied to this task.");
         }
@@ -62,8 +69,36 @@ public class ApplicationServiceImpl implements ApplicationService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<ApplicationResponse> getApplicationsByTask(Long taskId) {
+    public List<ApplicationResponse> getApplicationsByTask(Long taskId, String userEmail, boolean isAdmin) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found with id: " + taskId));
+
+        if (!isAdmin && !task.getBuyer().getEmail().equalsIgnoreCase(userEmail)) {
+            throw new ForbiddenOperationException("You are not allowed to view applications for this task.");
+        }
+
         return applicationRepository.findByTaskId(taskId).stream().map(this::mapToResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ApplicationResponse> getMyApplications(String sellerEmail) {
+        User seller = userRepository.findByEmail(sellerEmail)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + sellerEmail));
+
+        boolean hasSellerRole = seller.getRoles().stream()
+                .anyMatch(role -> role.getName() == RoleName.SELLER);
+        if (!hasSellerRole) {
+            throw new ForbiddenOperationException("Only SELLER accounts can view their applications.");
+        }
+
+        return applicationRepository.findBySellerId(seller.getId()).stream().map(this::mapToResponse).toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<ApplicationResponse> getAllApplicationsForAdmin() {
+        return applicationRepository.findAll().stream().map(this::mapToResponse).toList();
     }
 
     @Override

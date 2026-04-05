@@ -142,4 +142,15 @@ class TaskServiceImplTest {
 
         assertThat(response).hasSize(1);
     }
+
+    @Test
+    void getTasksByBuyerShouldReturnList() {
+        when(userRepository.findByEmail("buyer@test.com")).thenReturn(Optional.of(buyer));
+        when(taskRepository.findByBuyerId(1L)).thenReturn(List.of(task));
+
+        var response = taskService.getTasksByBuyer("buyer@test.com");
+
+        assertThat(response).hasSize(1);
+        assertThat(response.get(0).getBuyerId()).isEqualTo(1L);
+    }
 }

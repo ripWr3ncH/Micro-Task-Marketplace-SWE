@@ -13,6 +13,8 @@ public interface TaskService {
 
     List<TaskResponse> getAllTasks();
 
+    List<TaskResponse> getTasksByBuyer(String userEmail);
+
     TaskResponse updateTask(Long taskId, TaskUpdateRequest request, String userEmail, boolean isAdmin);
 
     void deleteTask(Long taskId, String userEmail, boolean isAdmin);

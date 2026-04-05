@@ -1,6 +1,7 @@
 package com.logarithm.microtask.config;
 
 import com.logarithm.microtask.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -29,23 +30,33 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+            .csrf(csrf -> csrf.disable())
             .httpBasic(httpBasic -> httpBasic.disable())
             .formLogin(formLogin -> formLogin.disable())
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/", "/index.html", "/css/**", "/js/**", "/favicon.ico", "/error").permitAll()
-                        .requestMatchers("/api/v1/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/tasks/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
-                        .requestMatchers(HttpMethod.PUT, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
-                        .requestMatchers(HttpMethod.POST, "/api/v1/applications/**").hasAnyRole("SELLER", "ADMIN", "BUYER")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/applications/**").hasAnyRole("BUYER", "SELLER", "ADMIN")
-                        .anyRequest().authenticated()
-                )
-                .authenticationProvider(authenticationProvider())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(ex -> ex
+                .authenticationEntryPoint((request, response, authException) ->
+                    response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized"))
+            )
+            .authorizeHttpRequests(auth -> auth
+                .requestMatchers("/", "/*.html", "/css/**", "/js/**", "/favicon.ico", "/error").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/register", "/api/v1/auth/login").permitAll()
+                .requestMatchers(HttpMethod.POST, "/api/v1/auth/logout").authenticated()
+                .requestMatchers(HttpMethod.GET, "/api/v1/tasks/mine").hasAnyRole("BUYER", "ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/tasks/**").authenticated()
+                .requestMatchers(HttpMethod.POST, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
+                .requestMatchers(HttpMethod.PUT, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/tasks/**").hasAnyRole("BUYER", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/v1/applications").hasRole("SELLER")
+                .requestMatchers(HttpMethod.GET, "/api/v1/applications/admin/**").hasRole("ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/applications/mine").hasRole("SELLER")
+                .requestMatchers(HttpMethod.GET, "/api/v1/applications/task/**").hasAnyRole("BUYER", "ADMIN")
+                .requestMatchers(HttpMethod.POST, "/api/v1/applications/*/accept").hasAnyRole("BUYER", "ADMIN")
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
+                .anyRequest().authenticated()
+            )
+            .authenticationProvider(authenticationProvider())
+            .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

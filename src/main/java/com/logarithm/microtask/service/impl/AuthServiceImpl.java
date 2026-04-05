@@ -10,8 +10,10 @@ import com.logarithm.microtask.exception.BadRequestException;
 import com.logarithm.microtask.repository.RoleRepository;
 import com.logarithm.microtask.repository.UserRepository;
 import com.logarithm.microtask.security.JwtService;
+import com.logarithm.microtask.security.TokenRevocationService;
 import com.logarithm.microtask.service.AuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,12 +32,15 @@ import java.util.stream.Collectors;
 @Transactional
 public class AuthServiceImpl implements AuthService {
 
+        private static final Pattern BCRYPT_HASH_PATTERN = Pattern.compile("^\\$2[aby]?\\$.{56}$");
+
     private final UserRepository userRepository;
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final UserDetailsService userDetailsService;
+        private final TokenRevocationService tokenRevocationService;
 
     @Override
     public AuthResponse register(RegisterRequest request) {
@@ -45,6 +51,10 @@ public class AuthServiceImpl implements AuthService {
         Set<RoleName> requestedRoles = request.getRoles() == null || request.getRoles().isEmpty()
                 ? Set.of(RoleName.BUYER)
                 : request.getRoles();
+
+        if (requestedRoles.contains(RoleName.ADMIN)) {
+            throw new BadRequestException("ADMIN role cannot be self-assigned.");
+        }
 
         Set<Role> resolvedRoles = new HashSet<>();
         for (RoleName roleName : requestedRoles) {
@@ -75,12 +85,19 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthResponse login(LoginRequest request) {
-        authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
-
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new BadRequestException("Invalid credentials."));
+                .orElseThrow(() -> new BadCredentialsException("Invalid credentials."));
+
+        migrateLegacyPlaintextPasswordIfNeeded(user, request.getPassword());
+
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+            );
+        } catch (IllegalArgumentException ex) {
+            // Normalizes malformed password-hash errors into auth failures.
+            throw new BadCredentialsException("Invalid credentials.", ex);
+        }
 
         UserDetails userDetails = userDetailsService.loadUserByUsername(user.getEmail());
         String token = jwtService.generateToken(userDetails);
@@ -92,4 +109,28 @@ public class AuthServiceImpl implements AuthService {
                 .roles(user.getRoles().stream().map(r -> r.getName().name()).collect(Collectors.toSet()))
                 .build();
     }
+
+        private void migrateLegacyPlaintextPasswordIfNeeded(User user, String rawPassword) {
+                String storedPassword = user.getPassword();
+
+                if (!isLegacyPlaintextPassword(storedPassword)) {
+                        return;
+                }
+
+                if (!storedPassword.equals(rawPassword)) {
+                        throw new BadCredentialsException("Invalid credentials.");
+                }
+
+                user.setPassword(passwordEncoder.encode(rawPassword));
+                userRepository.save(user);
+        }
+
+        private boolean isLegacyPlaintextPassword(String storedPassword) {
+                return storedPassword != null && !BCRYPT_HASH_PATTERN.matcher(storedPassword).matches();
+        }
+
+        @Override
+        public void logout(String token) {
+                tokenRevocationService.revokeToken(token);
+        }
 }
