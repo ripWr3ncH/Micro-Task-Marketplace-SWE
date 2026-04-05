@@ -19,8 +19,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.util.HashSet;
 import java.util.UUID;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -450,8 +453,268 @@ class MarketplaceIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @Test
+    void shouldReturnOnlyBuyerOwnedTasksFromMineEndpoint() throws Exception {
+        String buyerOneToken = registerAndGetToken("buyer-mine-owner-one", RoleName.BUYER);
+        String buyerTwoToken = registerAndGetToken("buyer-mine-owner-two", RoleName.BUYER);
+
+        String buyerOneTaskBody = """
+                {
+                  "title":"Buyer One Task",
+                  "description":"Owned by buyer one",
+                  "budget":80.00
+                }
+                """;
+
+        String buyerOneTaskResponse = mockMvc.perform(post("/api/v1/tasks")
+                        .header("Authorization", "Bearer " + buyerOneToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(buyerOneTaskBody))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long buyerOneTaskId = objectMapper.readTree(buyerOneTaskResponse).get("id").asLong();
+
+        String buyerTwoTaskBody = """
+                {
+                  "title":"Buyer Two Task",
+                  "description":"Owned by buyer two",
+                  "budget":95.00
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/tasks")
+                        .header("Authorization", "Bearer " + buyerTwoToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(buyerTwoTaskBody))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/v1/tasks/mine")
+                        .header("Authorization", "Bearer " + buyerOneToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].id").value(buyerOneTaskId));
+    }
+
+    @Test
+    void shouldAllowBuyerToMarkAssignedTaskCompleted() throws Exception {
+        String buyerToken = registerAndGetToken("buyer-complete", RoleName.BUYER);
+        String sellerToken = registerAndGetToken("seller-complete", RoleName.SELLER);
+
+        String taskBody = """
+                {
+                  "title":"Completion Flow Task",
+                  "description":"Needs full lifecycle",
+                  "budget":150.00
+                }
+                """;
+
+        String taskResponse = mockMvc.perform(post("/api/v1/tasks")
+                        .header("Authorization", "Bearer " + buyerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(taskBody))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long taskId = objectMapper.readTree(taskResponse).get("id").asLong();
+
+        String applyBody = """
+                {
+                  "taskId":%d,
+                  "proposedAmount":140.00,
+                  "coverLetter":"Ready to execute"
+                }
+                """.formatted(taskId);
+
+        String applicationResponse = mockMvc.perform(post("/api/v1/applications")
+                        .header("Authorization", "Bearer " + sellerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(applyBody))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long applicationId = objectMapper.readTree(applicationResponse).get("id").asLong();
+
+        mockMvc.perform(post("/api/v1/applications/{applicationId}/accept", applicationId)
+                        .header("Authorization", "Bearer " + buyerToken))
+                .andExpect(status().isOk());
+
+        String completeBody = """
+                {
+                  "status":"COMPLETED"
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/tasks/{taskId}", taskId)
+                        .header("Authorization", "Bearer " + buyerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(completeBody))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
+    }
+
+    @Test
+    void shouldRejectBuyerUpdatingAnotherBuyersTask() throws Exception {
+        String ownerBuyerToken = registerAndGetToken("buyer-owner-update", RoleName.BUYER);
+        String otherBuyerToken = registerAndGetToken("buyer-other-update", RoleName.BUYER);
+
+        String taskBody = """
+                {
+                  "title":"Owner Protected Task",
+                  "description":"Only owner can edit",
+                  "budget":110.00
+                }
+                """;
+
+        String taskResponse = mockMvc.perform(post("/api/v1/tasks")
+                        .header("Authorization", "Bearer " + ownerBuyerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(taskBody))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long taskId = objectMapper.readTree(taskResponse).get("id").asLong();
+
+        String updateBody = """
+                {
+                  "title":"Unauthorized Update Attempt"
+                }
+                """;
+
+        mockMvc.perform(put("/api/v1/tasks/{taskId}", taskId)
+                        .header("Authorization", "Bearer " + otherBuyerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(updateBody))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldAllowAdminDeletingAnyTask() throws Exception {
+        String buyerToken = registerAndGetToken("buyer-admin-delete", RoleName.BUYER);
+        String adminToken = ensureAdminAndLogin();
+
+        String taskBody = """
+                {
+                  "title":"Task for Admin Deletion",
+                  "description":"Admin should be able to delete",
+                  "budget":210.00
+                }
+                """;
+
+        String taskResponse = mockMvc.perform(post("/api/v1/tasks")
+                        .header("Authorization", "Bearer " + buyerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(taskBody))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
+
+        Long taskId = objectMapper.readTree(taskResponse).get("id").asLong();
+
+        mockMvc.perform(delete("/api/v1/tasks/{taskId}", taskId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/v1/tasks/{taskId}", taskId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldAllowAdminToViewAllUsers() throws Exception {
+        TestAccount buyer = registerAndGetAccount("buyer-admin-user-list", RoleName.BUYER);
+        String adminToken = ensureAdminAndLogin();
+
+        mockMvc.perform(get("/api/v1/admin/users")
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.email=='" + buyer.email() + "')]").isNotEmpty());
+    }
+
+    @Test
+    void shouldAllowAdminToBlockAndUnblockUser() throws Exception {
+        TestAccount buyer = registerAndGetAccount("buyer-admin-block", RoleName.BUYER);
+        Long buyerId = userRepository.findByEmail(buyer.email()).orElseThrow().getId();
+        String adminToken = ensureAdminAndLogin();
+
+        mockMvc.perform(patch("/api/v1/admin/users/{userId}/block", buyerId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.blocked").value(true));
+
+        mockMvc.perform(get("/api/v1/tasks")
+                        .header("Authorization", "Bearer " + buyer.token()))
+                .andExpect(status().isForbidden());
+
+        String loginBody = """
+                {
+                  "email":"%s",
+                  "password":"password123"
+                }
+                """.formatted(buyer.email());
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginBody))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(patch("/api/v1/admin/users/{userId}/unblock", buyerId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.blocked").value(false));
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginBody))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void shouldAllowAdminToDeleteUser() throws Exception {
+        TestAccount seller = registerAndGetAccount("seller-admin-delete-user", RoleName.SELLER);
+        Long sellerId = userRepository.findByEmail(seller.email()).orElseThrow().getId();
+        String adminToken = ensureAdminAndLogin();
+
+        mockMvc.perform(delete("/api/v1/admin/users/{userId}", sellerId)
+                        .header("Authorization", "Bearer " + adminToken))
+                .andExpect(status().isNoContent());
+
+        String loginBody = """
+                {
+                  "email":"%s",
+                  "password":"password123"
+                }
+                """.formatted(seller.email());
+
+        mockMvc.perform(post("/api/v1/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(loginBody))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldRejectNonAdminFromAdminUserManagement() throws Exception {
+        TestAccount buyer = registerAndGetAccount("buyer-non-admin-user-management", RoleName.BUYER);
+
+        mockMvc.perform(get("/api/v1/admin/users")
+                        .header("Authorization", "Bearer " + buyer.token()))
+                .andExpect(status().isForbidden());
+    }
+
     private String registerAndGetToken(String emailPrefix, RoleName roleName) throws Exception {
-        String email = uniqueEmail(emailPrefix);
+        return registerAndGetToken(emailPrefix, uniqueEmail(emailPrefix), roleName);
+    }
+
+    private String registerAndGetToken(String fullName, String email, RoleName roleName) throws Exception {
         String registerBody = """
                 {
                   "fullName":"%s",
@@ -459,7 +722,7 @@ class MarketplaceIntegrationTest {
                   "password":"password123",
                   "roles":["%s"]
                 }
-                """.formatted(emailPrefix, email, roleName.name());
+                """.formatted(fullName, email, roleName.name());
 
         String registerResponse = mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -471,6 +734,12 @@ class MarketplaceIntegrationTest {
 
         JsonNode node = objectMapper.readTree(registerResponse);
         return node.get("token").asText();
+    }
+
+    private TestAccount registerAndGetAccount(String emailPrefix, RoleName roleName) throws Exception {
+        String email = uniqueEmail(emailPrefix);
+        String token = registerAndGetToken(emailPrefix, email, roleName);
+        return new TestAccount(email, token);
     }
 
     private String ensureAdminAndLogin() throws Exception {
@@ -494,6 +763,7 @@ class MarketplaceIntegrationTest {
 
         adminUser.getRoles().add(adminRole);
         adminUser.setPassword(passwordEncoder.encode(adminPassword));
+        adminUser.setBlocked(false);
         userRepository.save(adminUser);
 
         String loginBody = """
@@ -519,4 +789,6 @@ class MarketplaceIntegrationTest {
         String suffix = UUID.randomUUID().toString().substring(0, 8);
         return prefix + "-" + suffix + "@test.com";
     }
+
+    private record TestAccount(String email, String token) {}
 }

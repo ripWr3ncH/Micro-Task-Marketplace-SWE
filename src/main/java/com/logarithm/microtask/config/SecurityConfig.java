@@ -52,6 +52,7 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.GET, "/api/v1/applications/mine").hasRole("SELLER")
                 .requestMatchers(HttpMethod.GET, "/api/v1/applications/task/**").hasAnyRole("BUYER", "ADMIN")
                 .requestMatchers(HttpMethod.POST, "/api/v1/applications/*/accept").hasAnyRole("BUYER", "ADMIN")
+                .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .authenticationProvider(authenticationProvider())

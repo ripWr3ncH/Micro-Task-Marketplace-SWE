@@ -5,7 +5,8 @@ const API = {
   login: "/api/v1/auth/login",
   logout: "/api/v1/auth/logout",
   tasks: "/api/v1/tasks",
-  applications: "/api/v1/applications"
+  applications: "/api/v1/applications",
+  adminUsers: "/api/v1/admin/users"
 };
 
 const state = {
@@ -27,7 +28,7 @@ const ROLE_GROUPS = {
 const NAV_LABELS = {
   dashboard: {
     BUYER: "Buyer Dashboard",
-    SELLER: "Buyer Dashboard",
+    SELLER: "Seller Dashboard",
     ADMIN: "Admin Dashboard"
   },
   tasks: {
@@ -101,6 +102,12 @@ const PAGE_COPY = {
     ADMIN: {
       title: "Admin Application Review",
       subtitle: "Audit and process applications across tasks."
+    }
+  },
+  admin: {
+    ADMIN: {
+      title: "Admin Dashboard",
+      subtitle: "Monitor tasks, applications, and moderation actions in one place."
     }
   }
 };
@@ -209,6 +216,10 @@ function getPrimaryRole() {
   return "";
 }
 
+function isAdmin() {
+  return state.roles.includes("ADMIN");
+}
+
 function updateRoleBadge() {
   const roleBadge = byId("role-badge");
   if (!roleBadge) {
@@ -246,6 +257,9 @@ function applyRoleAwareCopy() {
     const label = NAV_LABELS[key]?.[role];
     if (label) {
       element.textContent = label;
+    }
+    if (key === "dashboard") {
+      element.setAttribute("href", role === "ADMIN" ? "/admin-panel.html" : "/buyer-dashboard.html");
     }
   });
 
@@ -382,16 +396,16 @@ function requireAuth() {
 }
 
 function goByRole(roles) {
+  if (roles.includes("ADMIN")) {
+    window.location.href = "/admin-panel.html";
+    return;
+  }
   if (roles.includes("BUYER")) {
     window.location.href = "/buyer-dashboard.html";
     return;
   }
   if (roles.includes("SELLER")) {
     window.location.href = "/available-tasks.html";
-    return;
-  }
-  if (roles.includes("ADMIN")) {
-    window.location.href = "/application-management.html";
     return;
   }
   window.location.href = "/buyer-dashboard.html";
@@ -476,8 +490,28 @@ function statusClass(value) {
   if (v === "OPEN") return "open";
   if (v === "IN_PROGRESS") return "inprogress";
   if (v === "COMPLETED") return "completed";
+  if (v === "PENDING") return "pending";
+  if (v === "ACCEPTED") return "accepted";
   if (v === "REJECTED") return "rejected";
   return "open";
+}
+
+function formatDateTime(value) {
+  if (!value) {
+    return "-";
+  }
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return String(value);
+  }
+  return parsed.toLocaleString();
+}
+
+function formatRoleNames(roles) {
+  if (!Array.isArray(roles) || roles.length === 0) {
+    return "-";
+  }
+  return roles.join(", ");
 }
 
 function renderDashboardTasks(tasks) {
@@ -498,15 +532,18 @@ function renderDashboardTasks(tasks) {
     `;
   }
 
-  const canApply = hasAnyRole(ROLE_GROUPS.apply);
+  const role = getPrimaryRole();
   tasks.forEach((task) => {
     const tr = document.createElement("tr");
+    const action = role === "BUYER"
+      ? `<a href="/application-management.html?taskId=${task.id || ""}">Review Apps</a>`
+      : `<a href="/admin-panel.html">Moderate</a>`;
     tr.innerHTML = `
       <td>${task.id || "-"}</td>
       <td>${task.title || "Untitled"}</td>
       <td>$${task.budget ?? "0"}</td>
       <td><span class="mtm-chip ${statusClass(task.status)}">${task.status || "OPEN"}</span></td>
-      <td>${canApply ? `<a href="/apply-task.html?taskId=${task.id || ""}">Apply</a>` : `<span class="mtm-muted">N/A</span>`}</td>
+      <td>${action}</td>
     `;
     rows.appendChild(tr);
   });
@@ -520,7 +557,8 @@ function renderDashboardTasks(tasks) {
 async function loadDashboard() {
   clearPageAlert();
   try {
-    const tasks = await request(API.tasks, { method: "GET" });
+    const targetUrl = isAdmin() ? API.tasks : `${API.tasks}/mine`;
+    const tasks = await request(targetUrl, { method: "GET" });
     const normalizedTasks = Array.isArray(tasks) ? tasks : [];
     renderDashboardTasks(normalizedTasks);
     showPageAlert("info", `Dashboard updated with ${normalizedTasks.length} task(s).`);
@@ -553,15 +591,19 @@ function renderAvailableTasks(tasks) {
     return;
   }
 
+  const visibleTasks = isAdmin()
+    ? tasks
+    : tasks.filter((task) => task.status === "OPEN");
+
   host.innerHTML = "";
 
-  if (!tasks.length) {
+  if (!visibleTasks.length) {
     host.innerHTML = `<article class="mtm-empty-card">No tasks are available right now. Try refreshing in a moment.</article>`;
     return;
   }
 
   const canApply = hasAnyRole(ROLE_GROUPS.apply);
-  tasks.forEach((task) => {
+  visibleTasks.forEach((task) => {
     const card = document.createElement("article");
     card.className = "mtm-card";
     card.innerHTML = `
@@ -585,7 +627,10 @@ async function loadAvailableTasks() {
     const tasks = await request(API.tasks, { method: "GET" });
     const normalizedTasks = Array.isArray(tasks) ? tasks : [];
     renderAvailableTasks(normalizedTasks);
-    showPageAlert("info", `Loaded ${normalizedTasks.length} available task(s).`);
+    const visibleCount = isAdmin()
+      ? normalizedTasks.length
+      : normalizedTasks.filter((task) => task.status === "OPEN").length;
+    showPageAlert("info", `Loaded ${visibleCount} available task(s).`);
     setStatus("Tasks Loaded", tasks);
   } catch (err) {
     const normalized = normalizeError(err);
@@ -730,11 +775,13 @@ function bindApplyTask() {
   });
 }
 
-function renderApplications(applications) {
+function renderApplications(applications, options = {}) {
   const host = byId("applications-list");
   if (!host) {
     return;
   }
+  const showTaskId = Boolean(options.showTaskId);
+  const onAccepted = typeof options.onAccepted === "function" ? options.onAccepted : null;
 
   host.innerHTML = "";
 
@@ -750,11 +797,15 @@ function renderApplications(applications) {
       <h3>${application.sellerName || "Unknown Seller"}</h3>
       <p>${application.coverLetter || "No cover letter"}</p>
       <div class="meta">
-        <span>App #${application.id || "-"} | $${application.proposedAmount ?? "0"}</span>
+        <span>
+          App #${application.id || "-"}${showTaskId ? ` | Task #${application.taskId || "-"}` : ""} | $${application.proposedAmount ?? "0"}
+        </span>
         <span class="mtm-chip ${statusClass(application.status)}">${application.status || "OPEN"}</span>
       </div>
       <div class="mtm-actions">
-        <button class="mtm-btn" data-accept-application-id="${application.id || ""}">Accept</button>
+        ${String(application.status || "").toUpperCase() === "PENDING"
+          ? `<button class="mtm-btn" data-accept-application-id="${application.id || ""}">Accept</button>`
+          : `<span class="mtm-muted">No action needed</span>`}
       </div>
     `;
     host.appendChild(item);
@@ -772,6 +823,9 @@ function renderApplications(applications) {
         persistSession();
         showPageAlert("success", `Application #${id} accepted successfully.`);
         setStatus("Application Accepted", data);
+        if (onAccepted) {
+          onAccepted();
+        }
       } catch (err) {
         const normalized = normalizeError(err);
         showPageAlert("error", normalized.message || "Could not accept application.");
@@ -793,6 +847,60 @@ function bindApplicationManagement() {
   }
 
   const taskInput = byId("fetch-task-id");
+  const query = new URLSearchParams(window.location.search);
+  const taskIdFromQuery = query.get("taskId");
+  let currentViewMode = "task";
+  let currentTaskId = 0;
+
+  const reloadCurrentView = () => {
+    if (currentViewMode === "admin") {
+      loadAllApplicationsForAdmin();
+      return;
+    }
+    if (currentTaskId > 0) {
+      loadApplicationsByTask(currentTaskId);
+    }
+  };
+
+  const loadApplicationsByTask = async (taskId) => {
+    try {
+      const data = await request(`${API.applications}/task/${taskId}`, { method: "GET" });
+      const normalized = Array.isArray(data) ? data : [];
+      renderApplications(normalized, { onAccepted: reloadCurrentView });
+      showPageAlert("info", `Loaded ${normalized.length} application(s) for task #${taskId}.`);
+      setStatus("Applications Loaded", data);
+      currentViewMode = "task";
+      currentTaskId = taskId;
+    } catch (err) {
+      const normalized = normalizeError(err);
+      showPageAlert("error", normalized.message || "Unable to load applications.");
+      setStatus(`Load Applications Failed (${normalized.status || "ERR"})`, normalized);
+    }
+  };
+
+  const loadAllApplicationsForAdmin = async () => {
+    if (!isAdmin()) {
+      showPageAlert("warning", "Only admin can load all applications.");
+      return;
+    }
+    try {
+      const data = await request(`${API.applications}/admin/all`, { method: "GET" });
+      const normalized = Array.isArray(data) ? data : [];
+      renderApplications(normalized, { showTaskId: true, onAccepted: reloadCurrentView });
+      showPageAlert("info", `Loaded ${normalized.length} application(s) across all tasks.`);
+      setStatus("All Applications Loaded", data);
+      currentViewMode = "admin";
+      currentTaskId = 0;
+    } catch (err) {
+      const normalized = normalizeError(err);
+      showPageAlert("error", normalized.message || "Unable to load all applications.");
+      setStatus(`Load All Applications Failed (${normalized.status || "ERR"})`, normalized);
+    }
+  };
+
+  if (taskInput && taskIdFromQuery) {
+    taskInput.value = taskIdFromQuery;
+  }
   if (taskInput && state.lastTaskId && !taskInput.value) {
     taskInput.value = state.lastTaskId;
   }
@@ -805,18 +913,312 @@ function bindApplicationManagement() {
       setStatus("Input Needed", "Provide a valid Task ID.");
       return;
     }
-
-    try {
-      const data = await request(`${API.applications}/task/${taskId}`, { method: "GET" });
-      renderApplications(Array.isArray(data) ? data : []);
-      showPageAlert("info", `Loaded ${(Array.isArray(data) ? data : []).length} application(s) for task #${taskId}.`);
-      setStatus("Applications Loaded", data);
-    } catch (err) {
-      const normalized = normalizeError(err);
-      showPageAlert("error", normalized.message || "Unable to load applications.");
-      setStatus(`Load Applications Failed (${normalized.status || "ERR"})`, normalized);
-    }
+    loadApplicationsByTask(taskId);
   });
+
+  byId("fetch-all-apps")?.addEventListener("click", () => {
+    clearPageAlert();
+    loadAllApplicationsForAdmin();
+  });
+
+  if (taskInput?.value) {
+    loadApplicationsByTask(Number(taskInput.value));
+  }
+}
+
+function renderAdminTaskRows(tasks, onReload) {
+  const rows = byId("admin-task-rows");
+  if (!rows) {
+    return;
+  }
+
+  rows.innerHTML = "";
+  if (!tasks.length) {
+    rows.innerHTML = `
+      <tr>
+        <td colspan="7">
+          <div class="mtm-empty">No tasks found.</div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  tasks.forEach((task) => {
+    const id = Number(task.id || 0);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${id || "-"}</td>
+      <td>${task.title || "Untitled"}</td>
+      <td>${task.buyerName || "-"}</td>
+      <td>$${task.budget ?? "0"}</td>
+      <td>
+        <div class="mtm-actions compact">
+          <select class="mtm-select" data-admin-status-select-id="${id}">
+            <option value="OPEN" ${task.status === "OPEN" ? "selected" : ""}>OPEN</option>
+            <option value="IN_PROGRESS" ${task.status === "IN_PROGRESS" ? "selected" : ""}>IN_PROGRESS</option>
+            <option value="COMPLETED" ${task.status === "COMPLETED" ? "selected" : ""}>COMPLETED</option>
+          </select>
+          <span class="mtm-chip ${statusClass(task.status)}">${task.status || "OPEN"}</span>
+        </div>
+      </td>
+      <td>${task.assignedSellerId || "-"}</td>
+      <td>
+        <div class="mtm-actions compact">
+          <button class="mtm-btn soft" type="button" data-admin-save-status-id="${id}">Save Status</button>
+          <button class="mtm-btn soft" type="button" data-admin-open-apps-task-id="${id}">Applications</button>
+          <button class="mtm-btn soft" type="button" data-admin-delete-task-id="${id}">Delete</button>
+        </div>
+      </td>
+    `;
+    rows.appendChild(tr);
+  });
+
+  rows.querySelectorAll("[data-admin-save-status-id]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const taskId = Number(button.getAttribute("data-admin-save-status-id") || 0);
+      const select = rows.querySelector(`[data-admin-status-select-id="${taskId}"]`);
+      const nextStatus = select?.value || "";
+      if (!taskId || !nextStatus) {
+        return;
+      }
+
+      try {
+        const response = await request(`${API.tasks}/${taskId}`, {
+          method: "PUT",
+          body: JSON.stringify({ status: nextStatus })
+        });
+        showPageAlert("success", `Task #${taskId} updated to ${nextStatus}.`);
+        setStatus("Task Status Updated", response);
+        if (onReload) {
+          onReload();
+        }
+      } catch (err) {
+        const normalized = normalizeError(err);
+        showPageAlert("error", normalized.message || "Task status update failed.");
+        setStatus(`Task Update Failed (${normalized.status || "ERR"})`, normalized);
+      }
+    });
+  });
+
+  rows.querySelectorAll("[data-admin-open-apps-task-id]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const taskId = Number(button.getAttribute("data-admin-open-apps-task-id") || 0);
+      if (!taskId) {
+        return;
+      }
+      window.location.href = `/application-management.html?taskId=${taskId}`;
+    });
+  });
+
+  rows.querySelectorAll("[data-admin-delete-task-id]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const taskId = Number(button.getAttribute("data-admin-delete-task-id") || 0);
+      if (!taskId) {
+        return;
+      }
+
+      const confirmed = window.confirm(`Delete task #${taskId}? This action cannot be undone.`);
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await request(`${API.tasks}/${taskId}`, { method: "DELETE" });
+        showPageAlert("success", `Task #${taskId} deleted.`);
+        setStatus("Task Deleted", { taskId });
+        if (onReload) {
+          onReload();
+        }
+      } catch (err) {
+        const normalized = normalizeError(err);
+        showPageAlert("error", normalized.message || "Task deletion failed.");
+        setStatus(`Task Deletion Failed (${normalized.status || "ERR"})`, normalized);
+      }
+    });
+  });
+}
+
+function renderAdminApplicationRows(applications) {
+  const rows = byId("admin-application-rows");
+  if (!rows) {
+    return;
+  }
+
+  rows.innerHTML = "";
+  if (!applications.length) {
+    rows.innerHTML = `
+      <tr>
+        <td colspan="6">
+          <div class="mtm-empty">No applications found.</div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  applications.forEach((application) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${application.id || "-"}</td>
+      <td>${application.taskId || "-"}</td>
+      <td>${application.sellerName || "-"}</td>
+      <td>$${application.proposedAmount ?? "0"}</td>
+      <td><span class="mtm-chip ${statusClass(application.status)}">${application.status || "PENDING"}</span></td>
+      <td>${formatDateTime(application.createdAt)}</td>
+    `;
+    rows.appendChild(tr);
+  });
+}
+
+function renderAdminUserRows(users, onReload) {
+  const rows = byId("admin-user-rows");
+  if (!rows) {
+    return;
+  }
+
+  rows.innerHTML = "";
+  if (!users.length) {
+    rows.innerHTML = `
+      <tr>
+        <td colspan="6">
+          <div class="mtm-empty">No users found.</div>
+        </td>
+      </tr>
+    `;
+    return;
+  }
+
+  users.forEach((user) => {
+    const userId = Number(user.id || 0);
+    const roles = Array.isArray(user.roles) ? user.roles : [];
+    const isProtected = roles.includes("ADMIN");
+    const actionText = user.blocked ? "Unblock" : "Block";
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${userId || "-"}</td>
+      <td>${user.fullName || "-"}</td>
+      <td>${user.email || "-"}</td>
+      <td>${formatRoleNames(roles)}</td>
+      <td><span class="mtm-chip ${user.blocked ? "blocked" : "active"}">${user.blocked ? "BLOCKED" : "ACTIVE"}</span></td>
+      <td>
+        <div class="mtm-actions compact">
+          ${isProtected
+            ? `<span class="mtm-muted">Protected</span>`
+            : `
+              <button class="mtm-btn soft" type="button" data-admin-toggle-block-user-id="${userId}" data-admin-current-blocked="${user.blocked ? "1" : "0"}">${actionText}</button>
+              <button class="mtm-btn soft" type="button" data-admin-delete-user-id="${userId}">Delete</button>
+            `}
+        </div>
+      </td>
+    `;
+    rows.appendChild(tr);
+  });
+
+  rows.querySelectorAll("[data-admin-toggle-block-user-id]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const userId = Number(button.getAttribute("data-admin-toggle-block-user-id") || 0);
+      const isBlockedNow = button.getAttribute("data-admin-current-blocked") === "1";
+      if (!userId) {
+        return;
+      }
+
+      const endpoint = isBlockedNow ? `${API.adminUsers}/${userId}/unblock` : `${API.adminUsers}/${userId}/block`;
+      try {
+        const response = await request(endpoint, { method: "PATCH" });
+        showPageAlert("success", `User #${userId} ${isBlockedNow ? "unblocked" : "blocked"} successfully.`);
+        setStatus("User Moderation Updated", response);
+        if (onReload) {
+          onReload();
+        }
+      } catch (err) {
+        const normalized = normalizeError(err);
+        showPageAlert("error", normalized.message || "Unable to update user status.");
+        setStatus(`User Status Update Failed (${normalized.status || "ERR"})`, normalized);
+      }
+    });
+  });
+
+  rows.querySelectorAll("[data-admin-delete-user-id]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const userId = Number(button.getAttribute("data-admin-delete-user-id") || 0);
+      if (!userId) {
+        return;
+      }
+
+      const confirmed = window.confirm(`Delete user #${userId}? This action cannot be undone.`);
+      if (!confirmed) {
+        return;
+      }
+
+      try {
+        await request(`${API.adminUsers}/${userId}`, { method: "DELETE" });
+        showPageAlert("success", `User #${userId} deleted.`);
+        setStatus("User Deleted", { userId });
+        if (onReload) {
+          onReload();
+        }
+      } catch (err) {
+        const normalized = normalizeError(err);
+        showPageAlert("error", normalized.message || "Unable to delete user.");
+        setStatus(`User Deletion Failed (${normalized.status || "ERR"})`, normalized);
+      }
+    });
+  });
+}
+
+function updateAdminMetrics(tasks, applications, users) {
+  byId("admin-metric-total-tasks").textContent = String(tasks.length);
+  byId("admin-metric-open-tasks").textContent = String(tasks.filter((task) => task.status === "OPEN").length);
+  byId("admin-metric-progress-tasks").textContent = String(tasks.filter((task) => task.status === "IN_PROGRESS").length);
+  byId("admin-metric-completed-tasks").textContent = String(tasks.filter((task) => task.status === "COMPLETED").length);
+  byId("admin-metric-total-applications").textContent = String(applications.length);
+  byId("admin-metric-pending-applications").textContent = String(
+    applications.filter((application) => application.status === "PENDING").length
+  );
+  byId("admin-metric-total-users").textContent = String(users.length);
+  byId("admin-metric-blocked-users").textContent = String(
+    users.filter((user) => user.blocked).length
+  );
+}
+
+async function loadAdminDashboard() {
+  clearPageAlert();
+  try {
+    const [tasksData, applicationsData, usersData] = await Promise.all([
+      request(API.tasks, { method: "GET" }),
+      request(`${API.applications}/admin/all`, { method: "GET" }),
+      request(API.adminUsers, { method: "GET" })
+    ]);
+    const tasks = Array.isArray(tasksData) ? tasksData : [];
+    const applications = Array.isArray(applicationsData) ? applicationsData : [];
+    const users = Array.isArray(usersData) ? usersData : [];
+    updateAdminMetrics(tasks, applications, users);
+    renderAdminTaskRows(tasks, loadAdminDashboard);
+    renderAdminApplicationRows(applications);
+    renderAdminUserRows(users, loadAdminDashboard);
+    showPageAlert("info", "Admin dashboard data refreshed.");
+    setStatus("Admin Dashboard Loaded", { tasks, applications, users });
+  } catch (err) {
+    const normalized = normalizeError(err);
+    showPageAlert("error", normalized.message || "Unable to load admin dashboard.");
+    setStatus(`Admin Dashboard Failed (${normalized.status || "ERR"})`, normalized);
+  }
+}
+
+function bindAdminPanel() {
+  if (!byId("admin-task-rows")) {
+    return;
+  }
+  if (!requireAuth()) {
+    return;
+  }
+  if (!enforcePageRole()) {
+    return;
+  }
+
+  byId("admin-refresh")?.addEventListener("click", loadAdminDashboard);
+  loadAdminDashboard();
 }
 
 function init() {
@@ -831,6 +1233,7 @@ function init() {
   bindCreateTask();
   bindApplyTask();
   bindApplicationManagement();
+  bindAdminPanel();
 }
 
 init();
