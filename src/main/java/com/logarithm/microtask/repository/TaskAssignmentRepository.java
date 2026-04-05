@@ -9,4 +9,6 @@ public interface TaskAssignmentRepository extends JpaRepository<TaskAssignment, 
     Optional<TaskAssignment> findByTaskId(Long taskId);
 
     boolean existsByTaskId(Long taskId);
+
+    long countBySellerId(Long sellerId);
 }

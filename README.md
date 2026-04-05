@@ -44,7 +44,7 @@ High-level flow:
 
 ## ER Diagram
 
-📌 [Insert ER Diagram Here]
+![Micro Task Marketplace ER Diagram](images/ER.png)
 
 Core relationships:
 
@@ -63,12 +63,19 @@ Core relationships:
 | POST | /api/v1/auth/login | No | Public | Login and return token |
 | GET | /api/v1/tasks | Yes | Any authenticated user | List all tasks |
 | GET | /api/v1/tasks/{taskId} | Yes | Any authenticated user | Get task by id |
+| GET | /api/v1/tasks/mine | Yes | BUYER, ADMIN | List tasks created by authenticated buyer/admin |
 | POST | /api/v1/tasks | Yes | BUYER, ADMIN | Create task |
 | PUT | /api/v1/tasks/{taskId} | Yes | BUYER, ADMIN (owner or admin check) | Update task |
 | DELETE | /api/v1/tasks/{taskId} | Yes | BUYER, ADMIN (owner or admin check) | Delete task |
-| POST | /api/v1/applications | Yes | SELLER, BUYER, ADMIN | Apply to a task |
-| GET | /api/v1/applications/task/{taskId} | Yes | BUYER, SELLER, ADMIN | List applications for a task |
-| POST | /api/v1/applications/{applicationId}/accept | Yes | BUYER, SELLER, ADMIN (service enforces buyer/admin ownership rule) | Accept one application |
+| POST | /api/v1/applications | Yes | SELLER | Apply to a task |
+| GET | /api/v1/applications/mine | Yes | SELLER | List seller's own applications |
+| GET | /api/v1/applications/task/{taskId} | Yes | BUYER, ADMIN | List applications for a task (owner/admin) |
+| GET | /api/v1/applications/admin/all | Yes | ADMIN | List all applications |
+| POST | /api/v1/applications/{applicationId}/accept | Yes | BUYER, ADMIN (service enforces owner/admin check) | Accept one application |
+| GET | /api/v1/admin/users | Yes | ADMIN | List all platform users |
+| PATCH | /api/v1/admin/users/{userId}/block | Yes | ADMIN | Block user account |
+| PATCH | /api/v1/admin/users/{userId}/unblock | Yes | ADMIN | Unblock user account |
+| DELETE | /api/v1/admin/users/{userId} | Yes | ADMIN | Delete user (non-admin, no active assignments) |
 
 ## Project Structure
 
@@ -172,6 +179,16 @@ For Windows PowerShell:
 4. Open UI at:
 
 - http://localhost:8081/index.html
+
+Admin dashboard:
+
+- http://localhost:8081/admin-panel.html
+
+## Role Validation
+
+For a complete Buyer/Seller/Admin validation matrix (automated + manual), see:
+
+- `ROLE_VALIDATION_CHECKLIST.md`
 
 ### Docker Setup
 
