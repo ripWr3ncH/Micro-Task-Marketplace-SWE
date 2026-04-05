@@ -14,4 +14,6 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
     boolean existsByTaskIdAndSellerId(Long taskId, Long sellerId);
 
     List<Application> findByTaskIdAndStatus(Long taskId, ApplicationStatus status);
+
+    void deleteBySellerId(Long sellerId);
 }
