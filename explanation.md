@@ -28,7 +28,7 @@ Zisan handled backend service correctness and rule enforcement in:
 
 - `src/main/java/com/logarithm/microtask/service/**`
 
-Key outcomes:
+Key outcomes   :
 
 - Ownership checks implemented and verified
 - Task/application status transitions validated
